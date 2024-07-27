@@ -5,6 +5,7 @@ using Assets.Scripts.Board.Objects;
 using Assets.Scripts.GameData;
 using TMPro;
 using System.Text;
+using System;
 
 #nullable enable
 
@@ -14,6 +15,7 @@ namespace Assets.Scripts.Board
     {
         [SerializeField] private GameDataObject _gameData;
 
+        public Action<string> actionOnWordSelect;
         public int rows;
         public int columns;
         public GameObject cellPrefab;
@@ -60,11 +62,9 @@ namespace Assets.Scripts.Board
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            Debug.Log("Pointer Down");
             GridCell? cell = GetCellUnderPointer(eventData);
             if (cell == null)
                 return;
-
 
             firstCell = cell;
             HighlightCell(cell);
@@ -81,7 +81,6 @@ namespace Assets.Scripts.Board
 
         public void OnDrag(PointerEventData eventData)
         {
-            Debug.Log("Dragging");
             GridCell? cell = GetCellUnderPointer(eventData);
 
             if (cell == null || firstCell == null)
@@ -98,12 +97,15 @@ namespace Assets.Scripts.Board
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
+
             foreach (var cell in GetCellSelection(firstCell, lastCell))
                 sb.Append(_gameData._letterGrid[cell.Row, cell.Column]);
+            
             Debug.Log("Pointer Up - Value: " + sb.ToString());
 
             ClearSelection(firstCell, lastCell);
+            actionOnWordSelect?.Invoke(sb.ToString());
         }
 
         private GridCell? GetCellUnderPointer(PointerEventData eventData)

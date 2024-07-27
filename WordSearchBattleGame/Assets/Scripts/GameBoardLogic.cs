@@ -32,17 +32,19 @@ public class GameBoardLogic
     private GameApiService _gameAPI;
     private GameDataObject _gameDataObject;
     private GridManager _gridManager;
+    private WordListManager _wordListManager;
     private List<KeyValuePair<PlayerType, BoardTilePosition>> _playerMoveList = new();
 
     private string _savedMemoryJsonData = string.Empty;
 
-    public GameBoardLogic(GameView gameView, UserActionEvents userActionEvents, GameApiService gameAPI, GameDataObject gameDataObject, GridManager gridManager)
+    public GameBoardLogic(GameView gameView, UserActionEvents userActionEvents, GameApiService gameAPI, GameDataObject gameDataObject, GridManager gridManager, WordListManager wordListManager)
     {
         _gameView = gameView;
         _userActionEvents = userActionEvents;
         _gameAPI = gameAPI;
         _gameDataObject = gameDataObject;
         _gridManager = gridManager;
+        _wordListManager = wordListManager;
     }
 
     public void Initialize()
@@ -55,6 +57,18 @@ public class GameBoardLogic
 
         // Set grid size based on params
         _boardGridSize = new(_rows, _columns);
+
+        _gridManager.actionOnWordSelect = CheckWordResult;
+    }
+
+    private void CheckWordResult(string value)
+    {
+        if (!_gameDataObject._wordList.Contains(value))
+            return;
+
+        _wordListManager.RemoveWordFromList(value);
+        //Success!
+
     }
 
     private void SetupGame()
@@ -68,6 +82,8 @@ public class GameBoardLogic
         _gridManager.rows = size;
 
         _gridManager.CreateGrid();
+
+        _wordListManager.PopulateList(_gameDataObject._wordList);
     }
 
     public void DeInitialize()
