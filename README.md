@@ -1,1 +1,1 @@
-# WordSearchBattleAPI
+# Word Search Battle
