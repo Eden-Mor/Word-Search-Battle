@@ -1,5 +1,3 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER app
 WORKDIR /app
@@ -22,10 +20,9 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-
-# Set permissions for DataWords.xml
+# Set permissions for DataWords.xml if it exists in the Resources directory
 USER root
-RUN chmod 444 /app/Resources/DataWords.xml
+RUN [ -f /app/Resources/DataWords.xml ] && chmod 444 /app/Resources/DataWords.xml || true
 USER app
 
 
