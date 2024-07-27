@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using WordSearchBattleAPI.Algorithm;
-using WordSearchBattleAPI.Models;
 
 namespace WordSearchBattleAPI.Controllers
 {
@@ -24,7 +23,7 @@ namespace WordSearchBattleAPI.Controllers
             return new(tuple.Item1, ConvertCharArrayToStringGrid(tuple.Item2));
         }
 
-        private static Tuple<string[], char[,]> SetupGame(int sizeList = 8, string nameList = "i")
+        private static Tuple<string[], char[,]> SetupGame(int sizeList = 8, string nameList = "Instruments")
         {
             WordSearch wordSearch = new();
             wordSearch.HandleSetupWords(nameList, sizeList);
@@ -42,12 +41,10 @@ namespace WordSearchBattleAPI.Controllers
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < cols; j++)
-                {
                     sb.Append(array[i, j]);
-                }
 
                 if (i != rows - 1)
-                    sb.Append(" \n "); // Add a new line after each row
+                    sb.Append('|');
             }
 
             return sb.ToString();

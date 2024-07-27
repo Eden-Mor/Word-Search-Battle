@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Collections.Generic;
+using System.Xml;
 
 namespace WordSearchBattleAPI.Algorithm
 {
@@ -33,15 +34,19 @@ namespace WordSearchBattleAPI.Algorithm
         }
         private static string LoadListWords(string nameListWords)
         {
-            //XElement dataWords = XElement.Parse(Properties.Resources.DataWords);
+            using var xmlStream = new FileStream("Resources/DataWords.xml", FileMode.Open);
 
-            //string list = (string)
-            //    (from el in dataWords.Elements(nameListWords)
-            //     select el).First();
+            XmlDocument doc = new XmlDocument();
+            doc.Load(xmlStream);
 
-            string list = "Aardvark Elephant Hare Lion Baboon Camel Beaver Whale Tiger Bear Rhinoceros Bobcat Dolphin Ferret Caribou Cheetah Chimpanzee Chipmunk Leopard Bat Rabbit Cougar Coyote Dingo Cat Dog Kangaroo Moose Fox Seal Panda Giraffe Groundhog Porpoise Hedgehog Hippopotamus Horse Monkey Jaguar Koala Llama Lynx Manatee Meerkat Mongoose Goat Gorilla Lemur Narwhal Otter Ocelot Opossum Orangutan Platypus Porcupine Raccoon Sheep Hyena Tapir Gazelle Sloth Wallaby Walrus Warthog Buffalo Deer Wildebeest Wolf Wolverine Zebra";
+            var test = doc.GetElementsByTagName(nameListWords);
 
-            return list;
+            if (test.Count <= 0)
+                return string.Empty;
+
+            string? list = test.Item(0)?.InnerText;
+
+            return list ?? string.Empty;
         }
         private static string SanitiseWords(string listWords)
         {

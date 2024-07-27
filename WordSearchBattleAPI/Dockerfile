@@ -22,4 +22,12 @@ RUN dotnet publish "./WordSearchBattleAPI.csproj" -c $BUILD_CONFIGURATION -o /ap
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+
+# Set permissions for DataWords.xml
+USER root
+RUN chmod 444 /app/Resources/DataWords.xml
+USER app
+
+
 ENTRYPOINT ["dotnet", "WordSearchBattleAPI.dll"]
