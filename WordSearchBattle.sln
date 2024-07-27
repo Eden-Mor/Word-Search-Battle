@@ -5,7 +5,7 @@ VisualStudioVersion = 17.8.34511.84
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WordSearchBattleAPI", "WordSearchBattleAPI\WordSearchBattleAPI.csproj", "{71C105EE-E696-4B2D-8939-291C6F5ED303}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "WordSearchBattleGame\Assembly-CSharp.csproj", "{1286C5FB-0FBA-147B-9C5D-F7AF46E51E7A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordSearchBattleUnity", "WordSearchBattleGame\WordSearchBattleUnity.csproj", "{1286C5FB-0FBA-147B-9C5D-F7AF46E51E7A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

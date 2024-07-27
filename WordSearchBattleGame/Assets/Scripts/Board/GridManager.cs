@@ -3,8 +3,10 @@ using UnityEngine.EventSystems;
 using System.Collections.Generic;
 using Assets.Scripts.Board.Objects;
 using Assets.Scripts.GameData;
-using UnityEngine.UI;
 using TMPro;
+using System.Text;
+
+#nullable enable
 
 namespace Assets.Scripts.Board
 {
@@ -15,8 +17,9 @@ namespace Assets.Scripts.Board
         public int rows;
         public int columns;
         public GameObject cellPrefab;
-        private GridCell[,] grid;
-        private List<GridCell> selectedCells = new();
+        private GridCell[,]? grid;
+        private GridCell? firstCell = null;
+        private GridCell? lastCell = null;
 
 
         public void CreateGrid()
@@ -38,6 +41,7 @@ namespace Assets.Scripts.Board
                     var cellCol = cellObj.GetComponent<BoxCollider2D>();
                     var cellText = cellObj.GetComponent<TextMeshProUGUI>();
 
+                    //cellText.text = r.ToString() + "," + c.ToString();
                     cellText.text = _gameData._letterGrid[r, c].ToString();
 
                     float xPos = (c * cellWidth) + (cellWidth / 2) - parentWidth / 2;
@@ -57,32 +61,52 @@ namespace Assets.Scripts.Board
         public void OnPointerDown(PointerEventData eventData)
         {
             Debug.Log("Pointer Down");
-            GridCell cell = GetCellUnderPointer(eventData);
+            GridCell? cell = GetCellUnderPointer(eventData);
             if (cell == null)
                 return;
 
-            ClearSelection();
-            selectedCells.Clear();
-            AddCellToSelection(cell);
+
+            firstCell = cell;
+            HighlightCell(cell);
         }
+
+        private bool IsDiagonalSelection(GridCell startCell, GridCell endCell)
+            => Mathf.Abs(startCell.Column - endCell.Column) == Mathf.Abs(startCell.Row - endCell.Row);
+
+        private bool IsStraightSelection(GridCell startCell, GridCell endCell)
+            => startCell.Column == endCell.Column || startCell.Row == endCell.Row;
+
+        private bool IsValidSelection(GridCell startCell, GridCell endCell)
+            => IsDiagonalSelection(startCell, endCell) || IsStraightSelection(startCell, endCell);
 
         public void OnDrag(PointerEventData eventData)
         {
             Debug.Log("Dragging");
-            GridCell cell = GetCellUnderPointer(eventData);
-            if (cell != null && !selectedCells.Contains(cell))
-                AddCellToSelection(cell);
+            GridCell? cell = GetCellUnderPointer(eventData);
+
+            if (cell == null || firstCell == null)
+                return;
+
+            if (!IsValidSelection(firstCell, cell))
+                return;
+
+            ClearSelection(firstCell, lastCell);
+            lastCell = cell;
+            foreach (var gridCell in GetCellSelection(firstCell, cell))
+                HighlightCell(gridCell);
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            Debug.Log("Pointer Up");
-            // Process the selected cells here
-            foreach (GridCell cell in selectedCells)
-                Debug.Log($"Selected Cell: {cell.Row}, {cell.Column}");
+            StringBuilder sb = new StringBuilder();
+            foreach (var cell in GetCellSelection(firstCell, lastCell))
+                sb.Append(_gameData._letterGrid[cell.Row, cell.Column]);
+            Debug.Log("Pointer Up - Value: " + sb.ToString());
+
+            ClearSelection(firstCell, lastCell);
         }
 
-        private GridCell GetCellUnderPointer(PointerEventData eventData)
+        private GridCell? GetCellUnderPointer(PointerEventData eventData)
         {
             // Convert screen point to world point and get the cell
             Vector2 worldPoint = Camera.main.ScreenToWorldPoint(eventData.position);
@@ -93,28 +117,91 @@ namespace Assets.Scripts.Board
             return null;
         }
 
-        private void AddCellToSelection(GridCell cell)
+        private void HighlightCell(GridCell cell)
         {
-            selectedCells.Add(cell);
             cell.SetHighlight(Color.black); // Change the color to the desired highlight color
         }
 
-        private void ClearSelection()
+        private void ClearSelection(GridCell? startCell, GridCell? endCell)
         {
-            foreach (GridCell cell in selectedCells)
+            foreach (GridCell cell in GetCellSelection(startCell, endCell))
                 cell.ClearHighlight();
         }
 
-        public void HighlightCellsExternally(List<Vector2Int> cellsToHighlight, Color color)
+        private List<GridCell> GetCellSelection(GridCell? startCell, GridCell? endCell)
         {
-            foreach (Vector2Int position in cellsToHighlight)
+            List<GridCell> values = new();
+
+            if (grid == null)
+                throw new System.Exception("Grid was not created in GridManager before it was attempted to be used.");
+
+            if (startCell == null)
+                return values;
+
+            if (endCell == null)
+                return new List<GridCell>() { startCell };
+
+            int smaller = startCell.Column == endCell.Column ? startCell.Row : startCell.Column;
+            int bigger = startCell.Column == endCell.Column ? endCell.Row : endCell.Column;
+            (smaller, bigger) = smaller < bigger ? (smaller, bigger) : (bigger, smaller);
+
+            if (IsDiagonalSelection(startCell, endCell))
             {
-                if (position.x < 0 || position.x >= rows || position.y < 0 || position.y >= columns)
-                    continue;
-                
-                GridCell cell = grid[position.x, position.y];
-                cell.SetHighlight(color);
+                //check direction, for loop, add item per grid
+                // We know its a diagonal, so the available numbers for directions is either 1 3 7 or 9
+                // if start.Row < end.Row then we know its either 3 or 9
+                // if the start.Col > end.Col we know we need to go downwards (default is up)
+                //  1 2 3  NW N NE
+                //  4 5 6   W    E
+                //  7 8 9  SW S SE
+                DirectionEnum direction = startCell.Row > endCell.Row ? DirectionEnum.NW : DirectionEnum.NE;
+                if (startCell.Column > endCell.Column)
+                    direction += 6;
+
+                for (int t = 0; t + smaller <= bigger; t++)
+                {
+                    int valueRow = (direction is DirectionEnum.NE or DirectionEnum.SE)
+                        ? startCell.Row + t
+                        : startCell.Row - t;
+
+                    int valueCol = (direction is DirectionEnum.NE or DirectionEnum.NW)
+                        ? startCell.Column + t
+                        : startCell.Column - t;
+
+                    values.Add(grid[valueRow, valueCol]);
+                }
+
             }
+            else if (IsStraightSelection(startCell, endCell))
+            {
+                DirectionEnum direction =
+                    startCell.Row == endCell.Row
+                        ? startCell.Column > endCell.Column
+                            ? DirectionEnum.W
+                            : DirectionEnum.E
+                        : startCell.Row > endCell.Row
+                            ? DirectionEnum.N
+                            : DirectionEnum.S;
+
+                for (int t = 0; t + smaller <= bigger; t++)
+                {
+                    int valueRow = (direction is DirectionEnum.N or DirectionEnum.S)
+                        ? smaller + t
+                        : startCell.Row;
+
+                    int valueCol = (direction is DirectionEnum.E or DirectionEnum.W)
+                        ? smaller + t 
+                        : startCell.Column;
+
+                    values.Add(grid[valueRow, valueCol]);
+                }
+
+                if (direction is DirectionEnum.W or DirectionEnum.N)
+                    values.Reverse();
+
+            }
+
+            return values;
         }
     }
 
