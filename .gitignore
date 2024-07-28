@@ -10,6 +10,10 @@
 *.userosscache
 *.sln.docstates
 
+jwt-key.txt
+postgres-u.txt
+postgres-p.txt
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

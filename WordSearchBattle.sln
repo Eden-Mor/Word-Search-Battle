@@ -4,8 +4,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.8.34511.84
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WordSearchBattleAPI", "WordSearchBattleAPI\WordSearchBattleAPI.csproj", "{71C105EE-E696-4B2D-8939-291C6F5ED303}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1FF88067-04BE-40F5-A84E-D9CD87E0B8E0} = {1FF88067-04BE-40F5-A84E-D9CD87E0B8E0}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordSearchBattleUnity", "WordSearchBattleGame\WordSearchBattleUnity.csproj", "{1286C5FB-0FBA-147B-9C5D-F7AF46E51E7A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1FF88067-04BE-40F5-A84E-D9CD87E0B8E0} = {1FF88067-04BE-40F5-A84E-D9CD87E0B8E0}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordSearchBattleShared", "WordSearchBattleShared\WordSearchBattleShared.csproj", "{1FF88067-04BE-40F5-A84E-D9CD87E0B8E0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +29,10 @@ Global
 		{1286C5FB-0FBA-147B-9C5D-F7AF46E51E7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1286C5FB-0FBA-147B-9C5D-F7AF46E51E7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1286C5FB-0FBA-147B-9C5D-F7AF46E51E7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FF88067-04BE-40F5-A84E-D9CD87E0B8E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FF88067-04BE-40F5-A84E-D9CD87E0B8E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FF88067-04BE-40F5-A84E-D9CD87E0B8E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FF88067-04BE-40F5-A84E-D9CD87E0B8E0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

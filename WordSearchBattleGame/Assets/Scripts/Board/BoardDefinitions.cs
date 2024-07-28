@@ -4,6 +4,7 @@ namespace WordSearchBattle.Scripts
 {
     public abstract class UserActionEvents
     {
+        public abstract event Action LoginToSocketClicked;
         public abstract event Action StartGameClicked;
         public abstract event Action<BoardTilePosition> TileClicked;
     }

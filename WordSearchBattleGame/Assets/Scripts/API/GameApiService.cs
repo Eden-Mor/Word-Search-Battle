@@ -31,37 +31,16 @@ namespace Assets.Scripts.API
                 Debug.Log($"Player Data: {task.Result}");
         }
 
-        public IEnumerator GetRandomWordSearchCoroutine(Action onComplete)
+        public IEnumerator GetRandomWordSearchCoroutine(Action<string> onComplete)
         {
-            Task<string> task = _apiClient.GetAsync("wordsearch");
+            Task<string> task = _apiClient.GetAsync("wordsearch/getrandomwordsearch");
             yield return new WaitUntil(() => task.IsCompleted);
 
             if (task.IsFaulted || task.Result == null)
                 yield break;
 
             Debug.Log($"Player Data: {task.Result}");
-            var result = JsonUtility.FromJson<WordSearchBoardModel>(task.Result);
-
-            _gameData._wordList = result.item1;
-            _gameData._letterGrid = ConvertToCharArray(result.item2, '|');
-
-            onComplete?.Invoke();
-        }
-
-
-        public static char[,] ConvertToCharArray(string input, char separator)
-        {
-            var sections = input.Split(separator);
-            int numRows = sections.Length;
-            int numCols = sections[0].Length;
-
-            char[,] charArray = new char[numRows, numCols];
-
-            for (int i = 0; i < numRows; i++)
-                for (int j = 0; j < numCols; j++)
-                    charArray[i, j] = sections[i][j];
-
-            return charArray;
+            onComplete?.Invoke(task.Result);
         }
 
     }

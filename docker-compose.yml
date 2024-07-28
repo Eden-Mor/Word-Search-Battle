@@ -13,21 +13,37 @@ services:
     #    tmpfs:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
     environment:
-      POSTGRES_USER: eden
-      POSTGRES_PASSWORD: examplepassword
+      POSTGRES_USER_FILE: /run/secrets/postgres-u
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-p
       POSTGRES_DB: wordsearch
     volumes:
       - word_search_db_data:/var/lib/postgresql/data
     ports:
       - 3535:5432
+    secrets:
+      - postgres-u
+      - postgres-p
       
   api:
+    restart: always
     container_name: word_search_api
     build:
       dockerfile: WordSearchBattleAPI/Dockerfile
       context: .
     ports:
       - 2943:8080
-   
+    secrets:
+      - postgres-u
+      - postgres-p
+      - jwt-key
+      
+secrets:
+  postgres-u:
+    file: postgres-u.txt
+  postgres-p:
+    file: postgres-p.txt
+  jwt-key:
+    file: jwt-key.txt
+  
 volumes:
   word_search_db_data:

@@ -8,6 +8,7 @@ public class BoardEvents : UserActionEvents
 {
     public override event Action StartGameClicked;
     public override event Action<BoardTilePosition> TileClicked;
+    public override event Action LoginToSocketClicked;
 
     [SerializeField]
     private TMP_Dropdown _gameStateSourceDropdown;
@@ -23,6 +24,9 @@ public class BoardEvents : UserActionEvents
 
     public void OnStartGameClicked() 
         => StartGameClicked?.Invoke();
+
+    public void OnLoginToSocketClicked()
+        => LoginToSocketClicked?.Invoke();
 
     public void OnTileClicked(BoardTileView tileView) 
         => TileClicked?.Invoke(new BoardTilePosition(tileView.Row, tileView.Column));

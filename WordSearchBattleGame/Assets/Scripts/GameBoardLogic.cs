@@ -33,11 +33,12 @@ public class GameBoardLogic
     private GameDataObject _gameDataObject;
     private GridManager _gridManager;
     private WordListManager _wordListManager;
+    private GameClient _gameClient;
     private List<KeyValuePair<PlayerType, BoardTilePosition>> _playerMoveList = new();
 
     private string _savedMemoryJsonData = string.Empty;
 
-    public GameBoardLogic(GameView gameView, UserActionEvents userActionEvents, GameApiService gameAPI, GameDataObject gameDataObject, GridManager gridManager, WordListManager wordListManager)
+    public GameBoardLogic(GameView gameView, UserActionEvents userActionEvents, GameApiService gameAPI, GameDataObject gameDataObject, GridManager gridManager, WordListManager wordListManager, GameClient _GameClient)
     {
         _gameView = gameView;
         _userActionEvents = userActionEvents;
@@ -45,20 +46,21 @@ public class GameBoardLogic
         _gameDataObject = gameDataObject;
         _gridManager = gridManager;
         _wordListManager = wordListManager;
+        _gameClient = _GameClient;
     }
 
     public void Initialize()
     {
-        _gameAPI.StartCoroutine(_gameAPI.GetRandomWordSearchCoroutine(SetupGame));
-
         // Subscribe to user action events
         _userActionEvents.TileClicked += UserActionEvents_TileClicked;
         _userActionEvents.StartGameClicked += UserActionEvents_StartGameClicked;
+        _userActionEvents.LoginToSocketClicked += UserActionEvents_LoginClicked;
 
         // Set grid size based on params
         _boardGridSize = new(_rows, _columns);
 
         _gridManager.actionOnWordSelect = CheckWordResult;
+        _gameClient.OnGameStart = SetupGameFromString;
     }
 
     private void CheckWordResult(string value)
@@ -91,6 +93,7 @@ public class GameBoardLogic
         // Unsubscribe from user action events
         _userActionEvents.TileClicked -= UserActionEvents_TileClicked;
         _userActionEvents.StartGameClicked -= UserActionEvents_StartGameClicked;
+        _userActionEvents.LoginToSocketClicked -= UserActionEvents_LoginClicked;
 
         _gameView = null;
         _userActionEvents = null;
@@ -98,14 +101,50 @@ public class GameBoardLogic
 
     private void UserActionEvents_StartGameClicked()
     {
-        // It's the next game, let the other player start
-        _gameView.ChangeTurn(_startingPlayer);
-        _currentPlayer = _startingPlayer;
+        _gameAPI.StartCoroutine(_gameAPI.GetRandomWordSearchCoroutine(SetupGameFromString));
 
-        _gameView.StartGame(_startingPlayer);
+        //// It's the next game, let the other player start
+        //_gameView.ChangeTurn(_startingPlayer);
+        //_currentPlayer = _startingPlayer;
 
-        // Reset the game state
-        _isGameOver = false;
+        //_gameView.StartGame(_startingPlayer);
+
+        //// Reset the game state
+        //_isGameOver = false;
+    }
+
+
+
+
+    public static char[,] ConvertToCharArray(string input, char separator)
+    {
+        var sections = input.Split(separator);
+        int numRows = sections.Length;
+        int numCols = sections[0].Length;
+
+        char[,] charArray = new char[numRows, numCols];
+
+        for (int i = 0; i < numRows; i++)
+            for (int j = 0; j < numCols; j++)
+                charArray[i, j] = sections[i][j];
+
+        return charArray;
+    }
+
+    private void SetupGameFromString(string apires)
+    {
+        apires = apires.Replace("Item1", "item1").Replace("Item2", "item2");
+        var result = JsonUtility.FromJson<WordSearchBoardModel>(apires);
+
+        _gameDataObject._wordList = result.item1;
+        _gameDataObject._letterGrid = ConvertToCharArray(result.item2, '|');
+
+        SetupGame();
+    }
+
+    private void UserActionEvents_LoginClicked()
+    {
+        _gameClient.ConnectToServer();
     }
 
     private void UserActionEvents_TileClicked(BoardTilePosition tilePos)
