@@ -11,6 +11,7 @@ namespace WordSearchBattle.Scripts
 
     public abstract class GameView
     {
+        public abstract void AddPlayerJoinedText(string text);
         public abstract void StartGame(PlayerType player);
         public abstract void SetTileSign(PlayerType player, BoardTilePosition tilePosition);
         public abstract void ChangeTurn(PlayerType player);

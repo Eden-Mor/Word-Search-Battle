@@ -1,6 +1,4 @@
-﻿using System.Net.Http.Headers;
-using System.Net.Http;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using UnityEngine.Networking;
 using UnityEngine;
 

@@ -1,14 +1,12 @@
 using UnityEngine;
 using WordSearchBattle.Scripts;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Assets.Scripts.API;
-using Assets.Scripts.Models;
-using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.GameData;
-using Assets.Scripts.Board; // Linq is used extensively to check for a win and also in other locations, the commands are very compact and easier to understand than without Linq in my opinion
+using Assets.Scripts.Board;
+using System.Text;
+using WordSearchBattleShared.Models;
+using WordSearchBattleShared.API; // Linq is used extensively to check for a win and also in other locations, the commands are very compact and easier to understand than without Linq in my opinion
 
 /// <summary>
 /// Eden Mor 02/01/2024
@@ -61,6 +59,16 @@ public class GameBoardLogic
 
         _gridManager.actionOnWordSelect = CheckWordResult;
         _gameClient.OnGameStart = SetupGameFromString;
+        _gameClient.OnPlayerJoined = OnPlayerJoined;
+    }
+
+    private void OnPlayerJoined(PlayerJoinedInfo info)
+    {
+        StringBuilder sb = new();
+        sb.Append(info.PlayerName + " ");
+        sb.Append(info.IsJoined ? "Joined" : "Left");
+        sb.Append(" Count: " + info.PlayerCount);
+        _gameView.AddPlayerJoinedText(sb.ToString());
     }
 
     private void CheckWordResult(string value)
@@ -101,7 +109,9 @@ public class GameBoardLogic
 
     private void UserActionEvents_StartGameClicked()
     {
-        _gameAPI.StartCoroutine(_gameAPI.GetRandomWordSearchCoroutine(SetupGameFromString));
+        //_gameAPI.StartCoroutine(_gameAPI.GetRandomWordSearchCoroutine(SetupGameFromString));
+
+        _gameClient.SendGameStart();
 
         //// It's the next game, let the other player start
         //_gameView.ChangeTurn(_startingPlayer);
@@ -144,6 +154,9 @@ public class GameBoardLogic
 
     private void UserActionEvents_LoginClicked()
     {
+        _gameClient.playerJoinInfo.RoomCode = _gameDataObject._roomCode;
+        _gameClient.playerJoinInfo.PlayerName = "test";
+
         _gameClient.ConnectToServer();
     }
 

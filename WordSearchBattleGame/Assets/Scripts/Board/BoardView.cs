@@ -12,7 +12,9 @@ public class BoardView : GameView
     [SerializeField] private TextMeshProUGUI _gameWonWinnerText;
     [SerializeField] private TextMeshProUGUI _currentTurnText;
     [SerializeField] private GameObject _startGameButton;
-    
+    [SerializeField] private TextMeshProUGUI _roomCodeText;
+    [SerializeField] private TextMeshProUGUI _playerJoinedText;
+
     private BoardTileView[] _tiles;
 
     public void Initialize(BoardTileView[] tileViews)
@@ -20,26 +22,31 @@ public class BoardView : GameView
         //_tiles = tileViews;
         
         //ResetBoard();
-        //_startGameButton.SetActive(true);
+        _startGameButton.SetActive(true);
+    }
+
+    public override void AddPlayerJoinedText(string text)
+    {
+        _playerJoinedText.text += text + "\n";
     }
 
     private void ResetBoard()
     {
-        foreach (var boardTileView in _tiles)
-        {
-            boardTileView.SetSprite(null);
-        }
+        //foreach (var boardTileView in _tiles)
+        //{
+        //    boardTileView.SetSprite(null);
+        //}
         
         _startGameButton.gameObject.SetActive(false);
-        _gameWonWinnerText.enabled = false;
-        _currentTurnText.enabled = false;
+        //_gameWonWinnerText.enabled = false;
+        //_currentTurnText.enabled = false;
     }
     
     public override void StartGame(PlayerType playerType)
     {
         ResetBoard();
-        _currentTurnText.enabled = true;
-        SetCurrentTurn(playerType);
+        //_currentTurnText.enabled = true;
+        //SetCurrentTurn(playerType);
     }
 
     public override void SetTileSign(PlayerType player, BoardTilePosition tilePosition)

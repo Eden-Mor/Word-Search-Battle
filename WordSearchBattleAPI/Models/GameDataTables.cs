@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using WordSearchBattleShared.Enums;
 
 namespace WordSearchBattleAPI.Models
@@ -6,17 +7,19 @@ namespace WordSearchBattleAPI.Models
     public class GameSession
     {
         public GameSession() { }
-        public GameSession(GameSessionStatus statusCode, int ownerId, string roomCode)
+        public GameSession(GameSessionStatus statusCode, string roomCode)
         {
             GameSessionStatusCode = statusCode;
-            OwnerPlayerId = ownerId;
             RoomCode = roomCode;
         }
+
         [Key]
         public int GameSessionId { get; set; }
         public GameSessionStatus GameSessionStatusCode { get; set; }
-        public int OwnerPlayerId { get; set; }
         public string? RoomCode { get; set; }
+        public string? LetterGrid { get; set; }
+        public string[]? WordList { get; set; }
+
     }
 
     public class PlayerGameSession
@@ -43,7 +46,6 @@ namespace WordSearchBattleAPI.Models
         public string? Word { get; set; }
         public int StartX { get; set; }
         public int StartY { get; set; }
-        public int EndX { get; set; }
-        public int EndY { get; set; }
+        public DirectionEnum Direction { get; set; }
     }
 }

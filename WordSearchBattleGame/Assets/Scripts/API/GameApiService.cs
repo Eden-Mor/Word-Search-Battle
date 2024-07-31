@@ -1,10 +1,7 @@
 ﻿using System.Collections;
-using System.Net.Http;
 using System.Threading.Tasks;
 using UnityEngine;
 using Assets.Scripts.GameData;
-using Assets.Scripts.Models;
-using UnityEngine.Windows;
 using System;
 
 namespace Assets.Scripts.API

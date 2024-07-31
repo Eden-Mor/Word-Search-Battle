@@ -1,25 +1,24 @@
-﻿using Assets.Scripts.Models;
+﻿using WordSearchBattleShared.Models;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using UnityEditor.VersionControl;
 using UnityEngine;
+using WordSearchBattleShared.Global;
+using System.Threading.Tasks;
 
-namespace Assets.Scripts.API
+namespace WordSearchBattleShared.API
 {
     public class GameClient : MonoBehaviour
     {
         private TcpClient client;
         private NetworkStream stream;
         private const string serverIp = "127.0.0.1";
-        public int gameId = 1;
         private CancellationTokenSource cancellationTokenSource = new();
 
         public Action<string> OnGameStart;
+        public Action<PlayerJoinedInfo> OnPlayerJoined;
+        public PlayerJoinInfo playerJoinInfo = new();
 
         public void ConnectToServer()
         {
@@ -27,11 +26,11 @@ namespace Assets.Scripts.API
             cancellationTokenSource = new CancellationTokenSource();
 
             client = new TcpClient();
-            client.Connect(serverIp, 12345);
+            client.Connect(serverIp, Constants.Port);
             stream = client.GetStream();
             Debug.Log("Connected to server...");
 
-            SendGameId();
+            SendJoinRequest();
         }
 
         private void Disconnect()
@@ -40,27 +39,59 @@ namespace Assets.Scripts.API
             client?.Close();
         }
 
-        private async void SendGameId()
+        private void SendJoinRequest()
         {
-            byte[] data = Encoding.UTF8.GetBytes(gameId.ToString());
-            await stream.WriteAsync(data, 0, data.Length, cancellationTokenSource.Token);
-
-            ReadSocketData();
+            var data = JsonUtility.ToJson(playerJoinInfo);
+            _ = ReadSocketData();
+            _ = SendData(data);
         }
 
-        private async void ReadSocketData()
+        private async Task SendData(string dataString)
         {
-            byte[] data = new byte[4096];
+            byte[] data = Encoding.UTF8.GetBytes(dataString);
+            await stream.WriteAsync(data, 0, data.Length, cancellationTokenSource.Token);
+        }
+
+        public void SendWordFound(WordItem wordItem)
+        {
+            SessionData sessionData = new()
+            {
+                DataType = SocketDataType.WordCompleted,
+                Data = JsonUtility.ToJson(wordItem)
+            };
+
+            var data = JsonUtility.ToJson(sessionData);
+            _ = SendData(data);
+        }
+
+
+        public void SendGameStart()
+        {
+            SessionData sessionData = new()
+            {
+                DataType = SocketDataType.Start
+            };
+
+            var data = JsonUtility.ToJson(sessionData);
+            _ = SendData(data);
+        }
+
+        private async Task ReadSocketData()
+        {
             int bytesRead;
+            string message;
+            byte[] data = new byte[4096];
             var token = cancellationTokenSource.Token;
-            string message = string.Empty;
 
             while (!token.IsCancellationRequested)
             {
                 bytesRead = await stream.ReadAsync(data, 0, data.Length, token);
+                
+                if (bytesRead == 0)
+                    Disconnect();
 
                 if (token.IsCancellationRequested)
-                    return;
+                    continue;
 
                 message = Encoding.UTF8.GetString(data, 0, bytesRead);
 
@@ -75,7 +106,7 @@ namespace Assets.Scripts.API
             switch (message.DataType)
             {
                 case SocketDataType.Start:
-                    GameStart(message);
+                    ReceiveGameStart(message);
                     break;
 
                 case SocketDataType.End:
@@ -85,22 +116,32 @@ namespace Assets.Scripts.API
                     break;
 
                 case SocketDataType.WordCompleted:
-                    WordCompleted(message);
+                    ReceivedWordCompleted(message);
+                    break;
+
+                case SocketDataType.PlayerJoined:
+                    PlayerJoined(message); 
                     break;
             }
         }
 
-        private void GameStart(SessionData message)
+        private void ReceiveGameStart(SessionData message)
         {
             Debug.Log("Game started!");
             OnGameStart?.Invoke(message.Data);
         }
 
-        private void WordCompleted(SessionData message)
+        private void ReceivedWordCompleted(SessionData message)
         {
             var result = JsonUtility.FromJson<WordItem>(message.Data);
 
             Debug.Log("Word completed: " + result.Word + ".");
+        }
+
+        private void PlayerJoined(SessionData message)
+        {
+            var result = JsonUtility.FromJson<PlayerJoinedInfo>(message.Data);
+            OnPlayerJoined?.Invoke(result);
         }
     }
 }

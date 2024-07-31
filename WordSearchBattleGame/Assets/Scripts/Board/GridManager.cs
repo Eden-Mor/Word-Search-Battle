@@ -6,6 +6,7 @@ using Assets.Scripts.GameData;
 using TMPro;
 using System.Text;
 using System;
+using WordSearchBattleShared.Enums;
 
 #nullable enable
 
@@ -13,9 +14,9 @@ namespace Assets.Scripts.Board
 {
     public class GridManager : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
     {
-        [SerializeField] private GameDataObject _gameData;
+        [SerializeField] private GameDataObject? _gameData;
 
-        public Action<string> actionOnWordSelect;
+        public Action<string>? actionOnWordSelect;
         public int rows;
         public int columns;
         public GameObject cellPrefab;
@@ -44,7 +45,7 @@ namespace Assets.Scripts.Board
                     var cellText = cellObj.GetComponent<TextMeshProUGUI>();
 
                     //cellText.text = r.ToString() + "," + c.ToString();
-                    cellText.text = _gameData._letterGrid[r, c].ToString();
+                    cellText.text = _gameData?._letterGrid[r, c].ToString();
 
                     float xPos = (c * cellWidth) + (cellWidth / 2) - parentWidth / 2;
                     float yPos = (r * cellHeight) + (cellHeight / 2) - parentHeight / 2;
@@ -100,7 +101,7 @@ namespace Assets.Scripts.Board
             StringBuilder sb = new();
 
             foreach (var cell in GetCellSelection(firstCell, lastCell))
-                sb.Append(_gameData._letterGrid[cell.Row, cell.Column]);
+                sb.Append(_gameData?._letterGrid[cell.Row, cell.Column]);
             
             Debug.Log("Pointer Up - Value: " + sb.ToString());
 

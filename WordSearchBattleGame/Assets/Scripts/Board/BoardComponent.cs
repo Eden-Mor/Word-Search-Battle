@@ -1,9 +1,8 @@
 using Assets.Scripts.API;
 using Assets.Scripts.Board;
 using Assets.Scripts.GameData;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using WordSearchBattleShared.API;
 
 namespace WordSearchBattle.Scripts
 {
