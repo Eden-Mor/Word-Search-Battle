@@ -62,7 +62,7 @@ namespace WordSearchBattleAPI.Managers
 
 
                     var cancelTokenSource = new CancellationTokenSource();
-                    gameSessions[info.RoomCode] = new(new GameSessionTCP(info, stream, RemoveRoom, cancelTokenSource.Token, _serviceProvider), cancelTokenSource);
+                    gameSessions[info.RoomCode] = new(new GameSessionTCP(info, RemoveRoom, cancelTokenSource.Token, _serviceProvider), cancelTokenSource);
                 }
 
                 gameSessions[info.RoomCode].Item1.AddClient(client, info);
@@ -83,49 +83,91 @@ namespace WordSearchBattleAPI.Managers
     }
 
 
-    public class GameSessionTCP(PlayerInfo playerInfo, NetworkStream stream, Action<string> removeRoom, CancellationToken cancellationToken, IServiceProvider serviceProvider)
+    //each instance is a new room, CLIENTS contains each instance of a player.
+    public class GameSessionTCP(PlayerInfo masterPlayerInfo, Action<string> removeRoom, CancellationToken cancellationToken, IServiceProvider serviceProvider)
     {
-        private readonly List<TcpClient> clients = [];
-        private const int maxPlayers = 4;
-        private PlayerInfo clientInfo;
-
+        private readonly List<Tuple<TcpClient, PlayerInfo>> clients = [];
+        
         public void AddClient(TcpClient client, PlayerInfo info)
         {
-            clients.Add(client);
-            Console.WriteLine($"Client added to game session {info.RoomCode}...");
+            FindAndReplacePlayerName(info);
 
-            clientInfo = info;
+            clients.Add(new(client, info));
+            Console.WriteLine($"Client added to game session {info.RoomCode}...");
 
             SendPlayerJoinedData(info);
 
-            _ = ReadStreamRecursively();
+            _ = ReadStreamRecursively(client, info);
         }
 
-        private async Task ReadStreamRecursively()
+        private void FindAndReplacePlayerName(PlayerInfo info)
         {
-            int bytesRead;
-            string message;
-            byte[] data = new byte[1024];
+            FindAndReplacePlayerName(info, 0);
 
-            while (!cancellationToken.IsCancellationRequested)
+            void FindAndReplacePlayerName(PlayerInfo info, int dupCount)
             {
-                bytesRead = await stream.ReadAsync(data, 0, data.Length, cancellationToken);
-
-                if (bytesRead == 0)
-                    return;
-
-                if (cancellationToken.IsCancellationRequested)
-                    continue;
-
-                message = Encoding.UTF8.GetString(data, 0, bytesRead);
-
-                var result = JsonSerializer.Deserialize<SessionData>(message);
-
-                await HandleServerReceivedMessageAsync(result);
+                if (dupCount == 0)
+                {
+                    if (clients.Any(x => x.Item2.PlayerName == info.PlayerName))
+                        FindAndReplacePlayerName(info, dupCount + 1);
+                    else
+                        return;
+                }
+                else
+                {
+                    if (clients.Any(x => x.Item2.PlayerName == info.PlayerName + " " + dupCount))
+                        FindAndReplacePlayerName(info, dupCount + 1);
+                    else
+                        info.PlayerName += " " + (dupCount + 1);
+                }
             }
         }
 
-        private async Task HandleServerReceivedMessageAsync(SessionData? result)
+        private async Task ReadStreamRecursively(TcpClient client, PlayerInfo playerInfo)
+        {
+            byte[] buffer = new byte[1024];
+            var clientStream = client.GetStream();
+
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    if (!clientStream.DataAvailable)
+                    {
+                        await Task.Delay(100); // Adjust delay as necessary
+                        continue;
+                    }
+
+                    int bytesRead = await clientStream.ReadAsync(buffer, cancellationToken);
+
+                    if (bytesRead == 0)
+                    {
+                        Console.WriteLine("Client disconnected.");
+                        break;
+                    }
+
+                    string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    var result = JsonSerializer.Deserialize<SessionData>(message);
+
+                    if (result != null)
+                        await HandleServerReceivedMessageAsync(result, playerInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading from clientStream: {ex.Message}");
+            }
+            finally
+            {
+                if (clientStream != null)
+                {
+                    clientStream.Close();
+                    clientStream.Dispose();
+                }
+            }
+        }
+
+        private async Task HandleServerReceivedMessageAsync(SessionData? result, PlayerInfo playerInfo)
         {
             if (result == null)
                 return;
@@ -133,15 +175,15 @@ namespace WordSearchBattleAPI.Managers
             switch (result.DataType)
             {
                 case SocketDataType.Start:
-                    await StartRequestedAsync();
+                    await StartRequestedAsync(playerInfo);
                     break;
                 case SocketDataType.WordCompleted:
-                    WordComplete(result);
+                    WordComplete(result, playerInfo);
                     break;
             }
         }
 
-        private void WordComplete(SessionData result)
+        private void WordComplete(SessionData result, PlayerInfo playerInfo)
         {
             var data = JsonSerializer.Deserialize<WordItem>(result.Data);
 
@@ -165,6 +207,7 @@ namespace WordSearchBattleAPI.Managers
                 return;
 
             playerInfo.WordsCorrect++;
+            data.PlayerName = playerInfo.PlayerName;
 
             //This is where you would check if the word is actually on the grid in that specific location (or above this method).
 
@@ -181,7 +224,7 @@ namespace WordSearchBattleAPI.Managers
         {
             using var scope = serviceProvider.CreateScope();
             GameContext gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
-            return gameContext.GameSessions.Where(x => x.RoomCode == playerInfo.RoomCode).FirstOrDefault();
+            return gameContext.GameSessions.Where(x => x.RoomCode == masterPlayerInfo.RoomCode).FirstOrDefault();
         }
 
         private void SendOutWordCompleted(WordItem data)
@@ -195,9 +238,9 @@ namespace WordSearchBattleAPI.Managers
             SendDataToClients(sessionData);
         }
 
-        private async Task StartRequestedAsync()
+        private async Task StartRequestedAsync(PlayerInfo playerInfo)
         {
-            if (playerInfo.PlayerName != clientInfo.PlayerName)
+            if (masterPlayerInfo.PlayerName != playerInfo.PlayerName)
                 return;
 
             await StartGameAsync();
@@ -209,7 +252,7 @@ namespace WordSearchBattleAPI.Managers
             {
                 IsJoined = true,
                 PlayerCount = clients.Count,
-                PlayerName = "Player " + client.PlayerName,
+                PlayerName = client.PlayerName,
             };
 
             SessionData sessionData = new()
@@ -247,7 +290,7 @@ namespace WordSearchBattleAPI.Managers
 
             SendDataToClients(sessionData);
 
-            Console.WriteLine($"Game session {playerInfo.RoomCode} started for all players.");
+            Console.WriteLine($"Game session {masterPlayerInfo.RoomCode} started for all players.");
         }
 
 
@@ -255,19 +298,19 @@ namespace WordSearchBattleAPI.Managers
         {
             byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(dataSend));
 
-            List<TcpClient> clientsToRemove = [];
+            List<Tuple<TcpClient, PlayerInfo>> clientsToRemove = [];
 
             foreach (var client in clients)
             {
                 try
                 {
-                    NetworkStream stream = client.GetStream();
+                    NetworkStream stream = client.Item1.GetStream();
                     stream.Write(data, 0, data.Length);
                 }
                 catch (Exception)
                 {
-                    client.Close();
-                    client.Dispose();
+                    client.Item1.Close();
+                    client.Item1.Dispose();
                     clientsToRemove.Add(client);
                 }
             }
@@ -290,6 +333,7 @@ namespace WordSearchBattleAPI.Managers
         public int StartX { get; set; }
         public int StartY { get; set; }
         public DirectionEnum Direction { get; set; }
+        public string? PlayerName { get; set; }
     }
 
     public class PlayerJoinedInfo

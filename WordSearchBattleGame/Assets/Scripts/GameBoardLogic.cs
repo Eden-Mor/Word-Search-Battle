@@ -6,7 +6,8 @@ using Assets.Scripts.GameData;
 using Assets.Scripts.Board;
 using System.Text;
 using WordSearchBattleShared.Models;
-using WordSearchBattleShared.API; // Linq is used extensively to check for a win and also in other locations, the commands are very compact and easier to understand than without Linq in my opinion
+using WordSearchBattleShared.API;
+using System; // Linq is used extensively to check for a win and also in other locations, the commands are very compact and easier to understand than without Linq in my opinion
 
 /// <summary>
 /// Eden Mor 02/01/2024
@@ -32,11 +33,19 @@ public class GameBoardLogic
     private GridManager _gridManager;
     private WordListManager _wordListManager;
     private GameClient _gameClient;
+    private HighlightManager _highlightManager;
     private List<KeyValuePair<PlayerType, BoardTilePosition>> _playerMoveList = new();
 
     private string _savedMemoryJsonData = string.Empty;
 
-    public GameBoardLogic(GameView gameView, UserActionEvents userActionEvents, GameApiService gameAPI, GameDataObject gameDataObject, GridManager gridManager, WordListManager wordListManager, GameClient _GameClient)
+    public GameBoardLogic(GameView gameView, 
+                          UserActionEvents userActionEvents, 
+                          GameApiService gameAPI, 
+                          GameDataObject gameDataObject, 
+                          GridManager gridManager, 
+                          WordListManager wordListManager, 
+                          GameClient _GameClient,
+                          HighlightManager highlightManager)
     {
         _gameView = gameView;
         _userActionEvents = userActionEvents;
@@ -45,6 +54,7 @@ public class GameBoardLogic
         _gridManager = gridManager;
         _wordListManager = wordListManager;
         _gameClient = _GameClient;
+        _highlightManager = highlightManager;
     }
 
     public void Initialize()
@@ -57,9 +67,19 @@ public class GameBoardLogic
         // Set grid size based on params
         _boardGridSize = new(_rows, _columns);
 
-        _gridManager.actionOnWordSelect = CheckWordResult;
+        _gridManager.OnWordSelect = CheckWordResult;
         _gameClient.OnGameStart = SetupGameFromString;
         _gameClient.OnPlayerJoined = OnPlayerJoined;
+        _gameClient.OnWordComplete = MarkWord;
+    }
+
+    private void MarkWord(WordItem item)
+    {
+        _wordListManager.MarkWordCompleted(item.Word, item.PlayerName);
+
+
+        //_highlightManager.CreateHighlightBar()
+
     }
 
     private void OnPlayerJoined(PlayerJoinedInfo info)
@@ -71,14 +91,14 @@ public class GameBoardLogic
         _gameView.AddPlayerJoinedText(sb.ToString());
     }
 
-    private void CheckWordResult(string value)
+    private void CheckWordResult(WordItem value)
     {
-        if (!_gameDataObject._wordList.Contains(value))
+        if (!_gameDataObject._wordList.Contains(value.Word))
             return;
 
-        _wordListManager.RemoveWordFromList(value);
-        //Success!
+        value.PlayerName = _gameClient.playerJoinInfo.PlayerName;
 
+        _gameClient.SendWordFound(value);
     }
 
     private void SetupGame()
@@ -155,7 +175,7 @@ public class GameBoardLogic
     private void UserActionEvents_LoginClicked()
     {
         _gameClient.playerJoinInfo.RoomCode = _gameDataObject._roomCode;
-        _gameClient.playerJoinInfo.PlayerName = "test";
+        _gameClient.playerJoinInfo.PlayerName = string.IsNullOrEmpty(_gameDataObject._playerName) ? "default" : _gameDataObject._playerName;
 
         _gameClient.ConnectToServer();
     }

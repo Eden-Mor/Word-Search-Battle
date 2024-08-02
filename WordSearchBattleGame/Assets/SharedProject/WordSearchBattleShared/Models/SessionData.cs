@@ -17,6 +17,7 @@ namespace WordSearchBattleShared.Models
         public int StartX;
         public int StartY;
         public DirectionEnum Direction;
+        public string PlayerName;
     }
 
     [Serializable]
@@ -31,7 +32,7 @@ namespace WordSearchBattleShared.Models
     {
         public bool IsJoined;
         public int PlayerCount;
-        public string? PlayerName;
+        public string PlayerName;
     }
 
     public enum SocketDataType

@@ -7,6 +7,8 @@ using TMPro;
 using System.Text;
 using System;
 using WordSearchBattleShared.Enums;
+using WordSearchBattleShared.Models;
+using System.Linq;
 
 #nullable enable
 
@@ -16,7 +18,7 @@ namespace Assets.Scripts.Board
     {
         [SerializeField] private GameDataObject? _gameData;
 
-        public Action<string>? actionOnWordSelect;
+        public Action<WordItem>? OnWordSelect;
         public int rows;
         public int columns;
         public GameObject cellPrefab;
@@ -27,6 +29,10 @@ namespace Assets.Scripts.Board
 
         public void CreateGrid()
         {
+            // Clear existing children
+            foreach (Transform child in GetComponent<RectTransform>())
+                Destroy(child.gameObject);
+
             grid = new GridCell[rows, columns];
 
             RectTransform rt = GetComponent<RectTransform>();
@@ -92,21 +98,37 @@ namespace Assets.Scripts.Board
 
             ClearSelection(firstCell, lastCell);
             lastCell = cell;
-            foreach (var gridCell in GetCellSelection(firstCell, cell))
-                HighlightCell(gridCell);
+
+            var selectionData = GetCellSelection(firstCell, cell);
+            if (selectionData != null)
+                foreach (var gridCell in selectionData.Item1)
+                    HighlightCell(gridCell);
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
             StringBuilder sb = new();
 
-            foreach (var cell in GetCellSelection(firstCell, lastCell))
+            var selectionData = GetCellSelection(firstCell, lastCell);
+            if (selectionData == null)
+                return;
+
+            foreach (var cell in selectionData.Item1)
                 sb.Append(_gameData?._letterGrid[cell.Row, cell.Column]);
-            
+
             Debug.Log("Pointer Up - Value: " + sb.ToString());
 
             ClearSelection(firstCell, lastCell);
-            actionOnWordSelect?.Invoke(sb.ToString());
+
+            WordItem wordItem = new()
+            {
+                Word = sb.ToString(),
+                Direction = selectionData.Item2,
+                StartX = selectionData.Item1.FirstOrDefault().Column,
+                StartY = selectionData.Item1.FirstOrDefault().Row
+            };
+
+            OnWordSelect?.Invoke(wordItem);
         }
 
         private GridCell? GetCellUnderPointer(PointerEventData eventData)
@@ -127,22 +149,25 @@ namespace Assets.Scripts.Board
 
         private void ClearSelection(GridCell? startCell, GridCell? endCell)
         {
-            foreach (GridCell cell in GetCellSelection(startCell, endCell))
-                cell.ClearHighlight();
+            var selectionData = GetCellSelection(startCell, endCell);
+            if (selectionData != null)
+                foreach (var cell in selectionData.Item1)
+                    cell.ClearHighlight();
         }
 
-        private List<GridCell> GetCellSelection(GridCell? startCell, GridCell? endCell)
+        private Tuple<List<GridCell>, DirectionEnum>? GetCellSelection(GridCell? startCell, GridCell? endCell)
         {
             List<GridCell> values = new();
+            DirectionEnum direction = DirectionEnum.NW;
 
             if (grid == null)
                 throw new System.Exception("Grid was not created in GridManager before it was attempted to be used.");
 
             if (startCell == null)
-                return values;
+                return null;
 
             if (endCell == null)
-                return new List<GridCell>() { startCell };
+                return new(new List<GridCell>() { startCell }, DirectionEnum.Center);
 
             int smaller = startCell.Column == endCell.Column ? startCell.Row : startCell.Column;
             int bigger = startCell.Column == endCell.Column ? endCell.Row : endCell.Column;
@@ -157,7 +182,7 @@ namespace Assets.Scripts.Board
                 //  1 2 3  NW N NE
                 //  4 5 6   W    E
                 //  7 8 9  SW S SE
-                DirectionEnum direction = startCell.Row > endCell.Row ? DirectionEnum.NW : DirectionEnum.NE;
+                direction = startCell.Row > endCell.Row ? DirectionEnum.NW : DirectionEnum.NE;
                 if (startCell.Column > endCell.Column)
                     direction += 6;
 
@@ -177,7 +202,7 @@ namespace Assets.Scripts.Board
             }
             else if (IsStraightSelection(startCell, endCell))
             {
-                DirectionEnum direction =
+                direction =
                     startCell.Row == endCell.Row
                         ? startCell.Column > endCell.Column
                             ? DirectionEnum.W
@@ -193,7 +218,7 @@ namespace Assets.Scripts.Board
                         : startCell.Row;
 
                     int valueCol = (direction is DirectionEnum.E or DirectionEnum.W)
-                        ? smaller + t 
+                        ? smaller + t
                         : startCell.Column;
 
                     values.Add(grid[valueRow, valueCol]);
@@ -204,7 +229,7 @@ namespace Assets.Scripts.Board
 
             }
 
-            return values;
+            return new(values, direction);
         }
     }
 

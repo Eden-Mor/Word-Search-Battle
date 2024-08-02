@@ -18,6 +18,7 @@ namespace WordSearchBattleShared.API
 
         public Action<string> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
+        public Action<WordItem> OnWordComplete;
         public PlayerJoinInfo playerJoinInfo = new();
 
         public void ConnectToServer()
@@ -127,15 +128,13 @@ namespace WordSearchBattleShared.API
 
         private void ReceiveGameStart(SessionData message)
         {
-            Debug.Log("Game started!");
             OnGameStart?.Invoke(message.Data);
         }
 
         private void ReceivedWordCompleted(SessionData message)
         {
             var result = JsonUtility.FromJson<WordItem>(message.Data);
-
-            Debug.Log("Word completed: " + result.Word + ".");
+            OnWordComplete?.Invoke(result);
         }
 
         private void PlayerJoined(SessionData message)
