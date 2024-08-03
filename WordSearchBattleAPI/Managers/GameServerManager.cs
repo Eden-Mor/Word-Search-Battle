@@ -10,6 +10,7 @@ using WordSearchBattleShared.Enums;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Net.Http;
 
 namespace WordSearchBattleAPI.Managers
 {
@@ -86,13 +87,13 @@ namespace WordSearchBattleAPI.Managers
     //each instance is a new room, CLIENTS contains each instance of a player.
     public class GameSessionTCP(PlayerInfo masterPlayerInfo, Action<string> removeRoom, CancellationToken cancellationToken, IServiceProvider serviceProvider)
     {
-        private readonly List<Tuple<TcpClient, PlayerInfo>> clients = [];
-        
+        private readonly Dictionary<TcpClient, PlayerInfo> clients = [];
+
         public void AddClient(TcpClient client, PlayerInfo info)
         {
             FindAndReplacePlayerName(info);
 
-            clients.Add(new(client, info));
+            clients.Add(client, info);
             Console.WriteLine($"Client added to game session {info.RoomCode}...");
 
             SendPlayerJoinedData(info);
@@ -108,14 +109,14 @@ namespace WordSearchBattleAPI.Managers
             {
                 if (dupCount == 0)
                 {
-                    if (clients.Any(x => x.Item2.PlayerName == info.PlayerName))
+                    if (clients.Any(x => x.Value.PlayerName == info.PlayerName))
                         FindAndReplacePlayerName(info, dupCount + 1);
                     else
                         return;
                 }
                 else
                 {
-                    if (clients.Any(x => x.Item2.PlayerName == info.PlayerName + " " + dupCount))
+                    if (clients.Any(x => x.Value.PlayerName == info.PlayerName + " " + dupCount))
                         FindAndReplacePlayerName(info, dupCount + 1);
                     else
                         info.PlayerName += " " + (dupCount + 1);
@@ -127,6 +128,7 @@ namespace WordSearchBattleAPI.Managers
         {
             byte[] buffer = new byte[1024];
             var clientStream = client.GetStream();
+            int pollInterval = 0;
 
             try
             {
@@ -134,9 +136,24 @@ namespace WordSearchBattleAPI.Managers
                 {
                     if (!clientStream.DataAvailable)
                     {
-                        await Task.Delay(100); // Adjust delay as necessary
-                        continue;
+                        if (pollInterval <= 50)
+                        {
+                            await Task.Delay(100);
+                            pollInterval++;
+                            continue;
+                        }
+                        else
+                        {
+                            pollInterval = 0;
+                            bool isConnected = !(client.Client.Poll(1000, SelectMode.SelectRead) && client.Client.Available == 0);
+
+                            if (isConnected)
+                                continue;
+                            else
+                                break;
+                        }
                     }
+
 
                     int bytesRead = await clientStream.ReadAsync(buffer, cancellationToken);
 
@@ -145,6 +162,8 @@ namespace WordSearchBattleAPI.Managers
                         Console.WriteLine("Client disconnected.");
                         break;
                     }
+
+                    pollInterval = 0;
 
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                     var result = JsonSerializer.Deserialize<SessionData>(message);
@@ -164,7 +183,17 @@ namespace WordSearchBattleAPI.Managers
                     clientStream.Close();
                     clientStream.Dispose();
                 }
+
+                RemoveClient(client);
             }
+        }
+
+        private void RemoveClient(TcpClient client)
+        {
+            clients.Remove(client);
+
+            if (clients.Count == 0)
+                removeRoom?.Invoke(masterPlayerInfo.RoomCode!);
         }
 
         private async Task HandleServerReceivedMessageAsync(SessionData? result, PlayerInfo playerInfo)
@@ -185,7 +214,7 @@ namespace WordSearchBattleAPI.Managers
 
         private void WordComplete(SessionData result, PlayerInfo playerInfo)
         {
-            var data = JsonSerializer.Deserialize<WordItem>(result.Data);
+            var data = JsonSerializer.Deserialize<WordItem>(result.Data ?? string.Empty);
 
             if (data == null)
                 return;
@@ -298,25 +327,25 @@ namespace WordSearchBattleAPI.Managers
         {
             byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(dataSend));
 
-            List<Tuple<TcpClient, PlayerInfo>> clientsToRemove = [];
+            List<TcpClient> clientsToRemove = [];
 
             foreach (var client in clients)
             {
                 try
                 {
-                    NetworkStream stream = client.Item1.GetStream();
+                    NetworkStream stream = client.Key.GetStream();
                     stream.Write(data, 0, data.Length);
                 }
                 catch (Exception)
                 {
-                    client.Item1.Close();
-                    client.Item1.Dispose();
-                    clientsToRemove.Add(client);
+                    client.Key.Close();
+                    client.Key.Dispose();
+                    clientsToRemove.Add(client.Key);
                 }
             }
 
             foreach (var client in clientsToRemove)
-                clients.Remove(client);
+                RemoveClient(client);
         }
     }
 

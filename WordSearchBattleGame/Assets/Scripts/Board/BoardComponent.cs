@@ -15,6 +15,7 @@ namespace WordSearchBattle.Scripts
         [SerializeField] private GridManager _gridManager;
         [SerializeField] private WordListManager _wordListManager;
         [SerializeField] private GameClient _GameClient;
+        [SerializeField] private HighlightManager _HighlightManager;
 
         private GameBoardLogic _gameBoardLogic;
 
@@ -31,7 +32,7 @@ namespace WordSearchBattle.Scripts
         {
             _boardView.Initialize(GetComponentsInChildren<BoardTileView>());
 
-            _gameBoardLogic = new GameBoardLogic(_boardView, _boardEvents, _gameAPI, _gameData, _gridManager, _wordListManager, _GameClient);
+            _gameBoardLogic = new GameBoardLogic(_boardView, _boardEvents, _gameAPI, _gameData, _gridManager, _wordListManager, _GameClient, _HighlightManager);
             _gameBoardLogic.Initialize();
         }
 

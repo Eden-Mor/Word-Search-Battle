@@ -1,13 +1,15 @@
 ﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using WordSearchBattleShared.Models;
 
 namespace Assets.Scripts.Board.Objects
 {
-    public class GridCell : MonoBehaviour
+    public class GridCell : MonoBehaviour, IPosition
     {
-        public int Row { get; private set; }
-        public int Column { get; private set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+
         private TextMeshProUGUI textRenderer;
 
         private void Awake() 
@@ -15,8 +17,8 @@ namespace Assets.Scripts.Board.Objects
 
         public void Initialize(int row, int column)
         {
-            Row = row;
-            Column = column;
+            X = row;
+            Y = column;
         }
 
         public void SetHighlight(Color color) 

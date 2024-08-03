@@ -9,6 +9,7 @@ using System;
 using WordSearchBattleShared.Enums;
 using WordSearchBattleShared.Models;
 using System.Linq;
+using WordSearchBattleShared.Helpers;
 
 #nullable enable
 
@@ -25,6 +26,10 @@ namespace Assets.Scripts.Board
         private GridCell[,]? grid;
         private GridCell? firstCell = null;
         private GridCell? lastCell = null;
+        private float? cellWidth;
+        private float? cellHeight;
+        private float? parentWidth;
+        private float? parentHeight;
 
 
         public void CreateGrid()
@@ -36,10 +41,10 @@ namespace Assets.Scripts.Board
             grid = new GridCell[rows, columns];
 
             RectTransform rt = GetComponent<RectTransform>();
-            float parentWidth = rt.rect.width;
-            float parentHeight = rt.rect.height;
-            float cellWidth = parentWidth / columns;
-            float cellHeight = parentHeight / rows;
+            parentWidth = rt.rect.width;
+            parentHeight = rt.rect.height;
+            cellWidth = parentWidth / columns;
+            cellHeight = parentHeight / rows;
 
             for (int r = 0; r < rows; r++)
             {
@@ -53,18 +58,37 @@ namespace Assets.Scripts.Board
                     //cellText.text = r.ToString() + "," + c.ToString();
                     cellText.text = _gameData?._letterGrid[r, c].ToString();
 
-                    float xPos = (c * cellWidth) + (cellWidth / 2) - parentWidth / 2;
-                    float yPos = (r * cellHeight) + (cellHeight / 2) - parentHeight / 2;
-
-                    cellRt.anchoredPosition = new Vector2(xPos, yPos);
-                    cellCol.size = new Vector2(cellWidth, cellHeight);
-                    cellRt.sizeDelta = new Vector2(cellWidth, cellHeight);
+                    cellRt.anchoredPosition = GetVectorPositionOfCell(r, c);
+                    cellCol.size = new Vector2(cellWidth.Value, cellHeight.Value);
+                    cellRt.sizeDelta = new Vector2(cellWidth.Value, cellHeight.Value);
 
                     GridCell cell = cellObj.GetComponent<GridCell>();
                     cell.Initialize(r, c);
                     grid[r, c] = cell;
                 }
             }
+        }
+
+        public Vector2 GetCellSize()
+        {
+            if (cellWidth == null || cellHeight == null)
+                return Vector2.zero;
+
+            return new Vector2(cellWidth.Value, cellHeight.Value);
+        }
+
+        public Vector2 GetVectorPositionOfCell(IPosition position)
+            => GetVectorPositionOfCell(position.X, position.Y);
+
+        public Vector2 GetVectorPositionOfCell(int row, int column)
+        {
+            if (cellWidth == null || cellHeight == null || parentWidth == null || parentHeight == null)
+                return Vector2.zero;
+
+            float yPos = (row * cellHeight.Value) + (cellHeight.Value / 2) - parentHeight.Value / 2;
+            float xPos = (column * cellWidth.Value) + (cellWidth.Value / 2) - parentWidth.Value / 2;
+
+            return new Vector2(xPos, yPos);
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -77,14 +101,6 @@ namespace Assets.Scripts.Board
             HighlightCell(cell);
         }
 
-        private bool IsDiagonalSelection(GridCell startCell, GridCell endCell)
-            => Mathf.Abs(startCell.Column - endCell.Column) == Mathf.Abs(startCell.Row - endCell.Row);
-
-        private bool IsStraightSelection(GridCell startCell, GridCell endCell)
-            => startCell.Column == endCell.Column || startCell.Row == endCell.Row;
-
-        private bool IsValidSelection(GridCell startCell, GridCell endCell)
-            => IsDiagonalSelection(startCell, endCell) || IsStraightSelection(startCell, endCell);
 
         public void OnDrag(PointerEventData eventData)
         {
@@ -93,7 +109,7 @@ namespace Assets.Scripts.Board
             if (cell == null || firstCell == null)
                 return;
 
-            if (!IsValidSelection(firstCell, cell))
+            if (!PositionHelper.IsValidSelection(firstCell, cell))
                 return;
 
             ClearSelection(firstCell, lastCell);
@@ -114,9 +130,7 @@ namespace Assets.Scripts.Board
                 return;
 
             foreach (var cell in selectionData.Item1)
-                sb.Append(_gameData?._letterGrid[cell.Row, cell.Column]);
-
-            Debug.Log("Pointer Up - Value: " + sb.ToString());
+                sb.Append(_gameData?._letterGrid[cell.X, cell.Y]);
 
             ClearSelection(firstCell, lastCell);
 
@@ -124,12 +138,13 @@ namespace Assets.Scripts.Board
             {
                 Word = sb.ToString(),
                 Direction = selectionData.Item2,
-                StartX = selectionData.Item1.FirstOrDefault().Column,
-                StartY = selectionData.Item1.FirstOrDefault().Row
+                StartX = selectionData.Item1.FirstOrDefault().Y,
+                StartY = selectionData.Item1.FirstOrDefault().X
             };
 
             OnWordSelect?.Invoke(wordItem);
         }
+
 
         private GridCell? GetCellUnderPointer(PointerEventData eventData)
         {
@@ -143,9 +158,7 @@ namespace Assets.Scripts.Board
         }
 
         private void HighlightCell(GridCell cell)
-        {
-            cell.SetHighlight(Color.black); // Change the color to the desired highlight color
-        }
+            => cell.SetHighlight(Color.black);
 
         private void ClearSelection(GridCell? startCell, GridCell? endCell)
         {
@@ -157,80 +170,37 @@ namespace Assets.Scripts.Board
 
         private Tuple<List<GridCell>, DirectionEnum>? GetCellSelection(GridCell? startCell, GridCell? endCell)
         {
-            List<GridCell> values = new();
-            DirectionEnum direction = DirectionEnum.NW;
-
             if (grid == null)
-                throw new System.Exception("Grid was not created in GridManager before it was attempted to be used.");
+                throw new Exception("Grid was not created in GridManager before it was attempted to be used.");
 
             if (startCell == null)
                 return null;
 
+            List<GridCell> values = new();
+            DirectionEnum direction = DirectionEnum.Center;
+
             if (endCell == null)
-                return new(new List<GridCell>() { startCell }, DirectionEnum.Center);
-
-            int smaller = startCell.Column == endCell.Column ? startCell.Row : startCell.Column;
-            int bigger = startCell.Column == endCell.Column ? endCell.Row : endCell.Column;
-            (smaller, bigger) = smaller < bigger ? (smaller, bigger) : (bigger, smaller);
-
-            if (IsDiagonalSelection(startCell, endCell))
             {
-                //check direction, for loop, add item per grid
-                // We know its a diagonal, so the available numbers for directions is either 1 3 7 or 9
-                // if start.Row < end.Row then we know its either 3 or 9
-                // if the start.Col > end.Col we know we need to go downwards (default is up)
-                //  1 2 3  NW N NE
-                //  4 5 6   W    E
-                //  7 8 9  SW S SE
-                direction = startCell.Row > endCell.Row ? DirectionEnum.NW : DirectionEnum.NE;
-                if (startCell.Column > endCell.Column)
-                    direction += 6;
-
-                for (int t = 0; t + smaller <= bigger; t++)
-                {
-                    int valueRow = (direction is DirectionEnum.NE or DirectionEnum.SE)
-                        ? startCell.Row + t
-                        : startCell.Row - t;
-
-                    int valueCol = (direction is DirectionEnum.NE or DirectionEnum.NW)
-                        ? startCell.Column + t
-                        : startCell.Column - t;
-
-                    values.Add(grid[valueRow, valueCol]);
-                }
-
-            }
-            else if (IsStraightSelection(startCell, endCell))
-            {
-                direction =
-                    startCell.Row == endCell.Row
-                        ? startCell.Column > endCell.Column
-                            ? DirectionEnum.W
-                            : DirectionEnum.E
-                        : startCell.Row > endCell.Row
-                            ? DirectionEnum.N
-                            : DirectionEnum.S;
-
-                for (int t = 0; t + smaller <= bigger; t++)
-                {
-                    int valueRow = (direction is DirectionEnum.N or DirectionEnum.S)
-                        ? smaller + t
-                        : startCell.Row;
-
-                    int valueCol = (direction is DirectionEnum.E or DirectionEnum.W)
-                        ? smaller + t
-                        : startCell.Column;
-
-                    values.Add(grid[valueRow, valueCol]);
-                }
-
-                if (direction is DirectionEnum.W or DirectionEnum.N)
-                    values.Reverse();
-
+                values.Add(startCell);
+                return new Tuple<List<GridCell>, DirectionEnum>(values, direction);
             }
 
-            return new(values, direction);
+            direction = PositionHelper.GetDirection(startCell, endCell);
+            var length = PositionHelper.Length(startCell, endCell);
+
+            for (int t = 0; t <= length; t++)
+            {
+                var cell = PositionHelper.GetEndPosition(startCell, t, direction);
+
+                if (rows > cell.X && columns > cell.Y && cell.X >= 0 && cell.Y >= 0)
+                    values.Add(grid[cell.X, cell.Y]);
+                else
+                    Debug.Log("Fix this later, not sure how we got here.");
+            }
+
+            return new Tuple<List<GridCell>, DirectionEnum>(values, direction);
         }
+
     }
 
 }

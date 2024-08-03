@@ -7,12 +7,9 @@ using Assets.Scripts.Board;
 using System.Text;
 using WordSearchBattleShared.Models;
 using WordSearchBattleShared.API;
-using System; // Linq is used extensively to check for a win and also in other locations, the commands are very compact and easier to understand than without Linq in my opinion
+using WordSearchBattleShared.Helpers;
 
-/// <summary>
-/// Eden Mor 02/01/2024
-/// <see cref="GameBoardLogic"/> is the class used to display the Tic-Tac-Toe game, by handling the touch events using the provided GameAPI
-/// </summary>
+
 public class GameBoardLogic
 {
     public const string PLAYER_PREFS = "player_prefs";
@@ -76,10 +73,18 @@ public class GameBoardLogic
     private void MarkWord(WordItem item)
     {
         _wordListManager.MarkWordCompleted(item.Word, item.PlayerName);
+        Position start = new() { X = item.StartX, Y = item.StartY };
 
+        var end = PositionHelper.GetEndPosition(start, item.Word.Length, item.Direction);
 
-        //_highlightManager.CreateHighlightBar()
+        start.X = _gridManager.rows - start.X;
+        start.Y = _gridManager.rows - start.Y;
+        end.X = _gridManager.rows - end.X;
+        end.Y = _gridManager.rows - end.Y;
 
+        _highlightManager.CreateHighlightBar(_gridManager.GetVectorPositionOfCell(start),
+                                             _gridManager.GetVectorPositionOfCell(end),
+                                             50f);
     }
 
     private void OnPlayerJoined(PlayerJoinedInfo info)

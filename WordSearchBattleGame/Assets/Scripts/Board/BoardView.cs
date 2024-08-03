@@ -53,7 +53,7 @@ public class BoardView : GameView
     {
         var tile = _tiles.FirstOrDefault(tile => tile.Column == tilePosition.Column && tile.Row == tilePosition.Row);
         if(tile == null)
-            throw new NullReferenceException($"Can't find tile in position Row: {tilePosition.Row} Column: {tilePosition.Column}");
+            throw new NullReferenceException($"Can't find tile in position X: {tilePosition.Row} Y: {tilePosition.Column}");
 
         tile.SetSprite(player == PlayerType.PlayerO ? _player0Image : _playerXImage);
     }
