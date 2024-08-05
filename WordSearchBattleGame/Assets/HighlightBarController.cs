@@ -14,11 +14,12 @@ public class HighlightBarController : MonoBehaviour
 
     public void Setup(Vector2 start, Vector2 end, Color color, float opacity, float width)
     {
-        Vector2 direction = end - start;
+        Vector2 direction = (end - start) / 2;
         float length = direction.magnitude;
 
         rectTransform.sizeDelta = new Vector2(length, width);
-        rectTransform.anchoredPosition = (start - end) / 2;
+        rectTransform.position = (start + end) / 2;
+
 
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         rectTransform.rotation = Quaternion.Euler(0, 0, angle);

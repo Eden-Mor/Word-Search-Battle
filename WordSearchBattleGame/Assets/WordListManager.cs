@@ -50,8 +50,6 @@ public class WordListManager : MonoBehaviour
             tmp.color = Color.black;
             tmp.text = "(" + playerName + ") " + tmp.text;
 
-            wordList.RemoveAt(index);
-
             //// Re-populate the list to update the UI (optional, but ensures correct order)
             //PopulateList(wordList);
         }

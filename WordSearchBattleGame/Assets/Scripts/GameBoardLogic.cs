@@ -75,12 +75,9 @@ public class GameBoardLogic
         _wordListManager.MarkWordCompleted(item.Word, item.PlayerName);
         Position start = new() { X = item.StartX, Y = item.StartY };
 
-        var end = PositionHelper.GetEndPosition(start, item.Word.Length, item.Direction);
+        var length = item.Word.Length - 1;
 
-        start.X = _gridManager.rows - start.X;
-        start.Y = _gridManager.rows - start.Y;
-        end.X = _gridManager.rows - end.X;
-        end.Y = _gridManager.rows - end.Y;
+        var end = PositionHelper.GetEndPosition(start, length, item.Direction);
 
         _highlightManager.CreateHighlightBar(_gridManager.GetVectorPositionOfCell(start),
                                              _gridManager.GetVectorPositionOfCell(end),
@@ -110,6 +107,8 @@ public class GameBoardLogic
     {
         if (_gameDataObject._wordList.Count <= 0)
             return;
+
+        _highlightManager.ResetHighlights();
 
         var size = (int)Mathf.Sqrt(_gameDataObject._letterGrid.Length);
 

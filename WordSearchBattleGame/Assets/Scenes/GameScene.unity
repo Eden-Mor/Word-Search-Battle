@@ -1905,10 +1905,10 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 984595896}
   - {fileID: 1735684040}
   - {fileID: 1757378238}
   - {fileID: 1054705959}
-  - {fileID: 984595896}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1954,6 +1954,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1735684040}
   - component: {fileID: 1735684041}
+  - component: {fileID: 1735684042}
   m_Layer: 5
   m_Name: Board
   m_TagString: Untagged
@@ -1996,6 +1997,30 @@ MonoBehaviour:
   rows: 0
   columns: 0
   cellPrefab: {fileID: 2317579777238744259, guid: 540248a36e9457942aaf1ac9541c75eb, type: 3}
+--- !u!114 &1735684042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1735684039}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_StartCorner: 0
+  m_StartAxis: 0
+  m_CellSize: {x: 100, y: 100}
+  m_Spacing: {x: 0, y: 0}
+  m_Constraint: 0
+  m_ConstraintCount: 2
 --- !u!1 &1757378237
 GameObject:
   m_ObjectHideFlags: 0

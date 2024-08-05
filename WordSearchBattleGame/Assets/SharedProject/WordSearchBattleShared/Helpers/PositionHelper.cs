@@ -9,19 +9,19 @@ namespace WordSearchBattleShared.Helpers
 	public static class PositionHelper
 	{
 		public static readonly Dictionary<DirectionEnum, (int dx, int dy)> DirectionOffsets = new()
-		{
-			{ DirectionEnum.N, (0, 1) },
-			{ DirectionEnum.NE, (1, 1) },
-			{ DirectionEnum.NW, (-1, 1) },
-			{ DirectionEnum.S, (0, -1) },
-			{ DirectionEnum.SE, (1, -1) },
-			{ DirectionEnum.SW, (-1, -1) },
-			{ DirectionEnum.E, (1, 0) },
-			{ DirectionEnum.W, (-1, 0) },
-			{ DirectionEnum.Center, (0, 0) }
-		};
+        {
+            { DirectionEnum.N, (0, 1) },
+            { DirectionEnum.NE, (1, 1) },
+            { DirectionEnum.NW, (-1, 1) },
+            { DirectionEnum.S, (0, -1) },
+            { DirectionEnum.SE, (1, -1) },
+            { DirectionEnum.SW, (-1, -1) },
+            { DirectionEnum.E, (1, 0) },
+            { DirectionEnum.W, (-1, 0) },
+            { DirectionEnum.Center, (0, 0) }
+        };
 
-		public static bool IsDiagonalSelection(IPosition startCell, IPosition endCell)
+        public static bool IsDiagonalSelection(IPosition startCell, IPosition endCell)
 			=> Mathf.Abs(startCell.Y - endCell.Y) == Mathf.Abs(startCell.X - endCell.X);
 
 		public static bool IsStraightSelection(IPosition startCell, IPosition endCell)
@@ -33,6 +33,7 @@ namespace WordSearchBattleShared.Helpers
 		public static IPosition GetEndPosition(IPosition startCell, int length, DirectionEnum direction)
 		{
             var (dx, dy) = DirectionOffsets[direction];
+
             Position newCell = new()
             {
                 X = startCell.X + dx * length,

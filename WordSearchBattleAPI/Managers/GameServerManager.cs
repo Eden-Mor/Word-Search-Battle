@@ -126,7 +126,6 @@ namespace WordSearchBattleAPI.Managers
 
         private async Task ReadStreamRecursively(TcpClient client, PlayerInfo playerInfo)
         {
-            byte[] buffer = new byte[1024];
             var clientStream = client.GetStream();
             int pollInterval = 0;
 
@@ -134,28 +133,9 @@ namespace WordSearchBattleAPI.Managers
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    if (!clientStream.DataAvailable)
-                    {
-                        if (pollInterval <= 50)
-                        {
-                            await Task.Delay(100);
-                            pollInterval++;
-                            continue;
-                        }
-                        else
-                        {
-                            pollInterval = 0;
-                            bool isConnected = !(client.Client.Poll(1000, SelectMode.SelectRead) && client.Client.Available == 0);
-
-                            if (isConnected)
-                                continue;
-                            else
-                                break;
-                        }
-                    }
-
-
+                    byte[] buffer = new byte[1024];
                     int bytesRead = await clientStream.ReadAsync(buffer, cancellationToken);
+
 
                     if (bytesRead == 0)
                     {
@@ -163,13 +143,33 @@ namespace WordSearchBattleAPI.Managers
                         break;
                     }
 
-                    pollInterval = 0;
-
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                     var result = JsonSerializer.Deserialize<SessionData>(message);
 
                     if (result != null)
-                        await HandleServerReceivedMessageAsync(result, playerInfo);
+                        _ = HandleServerReceivedMessageAsync(result, playerInfo);
+
+
+                    pollInterval = 0;
+                    while (!clientStream.DataAvailable)
+                    {
+                        //if (pollInterval <= 50)
+                        //{
+                        await Task.Delay(100);
+                        //    pollInterval++;
+                        //    continue;
+                        //}
+                        //else
+                        //{
+                        //    pollInterval = 0;
+                        //    bool isConnected = !(client.Client.Poll(1000, SelectMode.SelectRead) && client.Client.Available == 0);
+
+                        //    if (isConnected)
+                        //        continue;
+                        //    else
+                        //        breakOut = true;
+                        //}
+                    }
                 }
             }
             catch (Exception ex)

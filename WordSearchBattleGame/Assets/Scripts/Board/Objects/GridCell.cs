@@ -7,6 +7,8 @@ namespace Assets.Scripts.Board.Objects
 {
     public class GridCell : MonoBehaviour, IPosition
     {
+        public int debugX;
+        public int debugY;
         public int X { get; set; }
         public int Y { get; set; }
 
@@ -15,10 +17,11 @@ namespace Assets.Scripts.Board.Objects
         private void Awake() 
             => textRenderer = GetComponent<TextMeshProUGUI>();
 
-        public void Initialize(int row, int column)
+        public void Initialize(int x, int y)
         {
-            X = row;
-            Y = column;
+            X = x;
+            Y = y;
+            debugX = x; debugY = y;
         }
 
         public void SetHighlight(Color color) 

@@ -10,6 +10,7 @@ using WordSearchBattleShared.Enums;
 using WordSearchBattleShared.Models;
 using System.Linq;
 using WordSearchBattleShared.Helpers;
+using UnityEngine.UI;
 
 #nullable enable
 
@@ -41,33 +42,37 @@ namespace Assets.Scripts.Board
             grid = new GridCell[rows, columns];
 
             RectTransform rt = GetComponent<RectTransform>();
+            GridLayoutGroup gl = GetComponent<GridLayoutGroup>();
             parentWidth = rt.rect.width;
             parentHeight = rt.rect.height;
             cellWidth = parentWidth / columns;
             cellHeight = parentHeight / rows;
 
-            for (int r = 0; r < rows; r++)
+            gl.cellSize = new(cellWidth.Value, cellHeight.Value);
+
+            for (int y = 0; y < rows; y++)
             {
-                for (int c = 0; c < columns; c++)
+                for (int x = 0; x < columns; x++)
                 {
                     GameObject cellObj = Instantiate(cellPrefab, this.transform);
                     var cellRt = cellObj.GetComponent<RectTransform>();
                     var cellCol = cellObj.GetComponent<BoxCollider2D>();
                     var cellText = cellObj.GetComponent<TextMeshProUGUI>();
 
-                    //cellText.text = r.ToString() + "," + c.ToString();
-                    cellText.text = _gameData?._letterGrid[r, c].ToString();
+                    cellText.text = _gameData?._letterGrid[x, y].ToString();
 
-                    cellRt.anchoredPosition = GetVectorPositionOfCell(r, c);
                     cellCol.size = new Vector2(cellWidth.Value, cellHeight.Value);
-                    cellRt.sizeDelta = new Vector2(cellWidth.Value, cellHeight.Value);
 
                     GridCell cell = cellObj.GetComponent<GridCell>();
-                    cell.Initialize(r, c);
-                    grid[r, c] = cell;
+                    cell.Initialize(x, y);
+                    grid[x, y] = cell;
                 }
             }
         }
+
+        public GameObject GetCellAtPosition(IPosition position)
+            => GetComponent<RectTransform>().GetChild(position.Y * rows + position.X).gameObject;
+
 
         public Vector2 GetCellSize()
         {
@@ -77,19 +82,15 @@ namespace Assets.Scripts.Board
             return new Vector2(cellWidth.Value, cellHeight.Value);
         }
 
-        public Vector2 GetVectorPositionOfCell(IPosition position)
-            => GetVectorPositionOfCell(position.X, position.Y);
-
-        public Vector2 GetVectorPositionOfCell(int row, int column)
+        public Vector2 GetVectorPositionOfCell(IPosition position, bool fromCenter = false)
         {
-            if (cellWidth == null || cellHeight == null || parentWidth == null || parentHeight == null)
+            var obj = GetCellAtPosition(position);
+            if (obj == null)
                 return Vector2.zero;
 
-            float yPos = (row * cellHeight.Value) + (cellHeight.Value / 2) - parentHeight.Value / 2;
-            float xPos = (column * cellWidth.Value) + (cellWidth.Value / 2) - parentWidth.Value / 2;
-
-            return new Vector2(xPos, yPos);
+            return obj.GetComponent<Transform>().position;
         }
+
 
         public void OnPointerDown(PointerEventData eventData)
         {
@@ -138,8 +139,8 @@ namespace Assets.Scripts.Board
             {
                 Word = sb.ToString(),
                 Direction = selectionData.Item2,
-                StartX = selectionData.Item1.FirstOrDefault().Y,
-                StartY = selectionData.Item1.FirstOrDefault().X
+                StartX = selectionData.Item1.FirstOrDefault().X,
+                StartY = selectionData.Item1.FirstOrDefault().Y
             };
 
             OnWordSelect?.Invoke(wordItem);

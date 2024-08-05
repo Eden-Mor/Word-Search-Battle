@@ -29,7 +29,6 @@ namespace WordSearchBattleShared.API
             client = new TcpClient();
             client.Connect(serverIp, Constants.Port);
             stream = client.GetStream();
-            Debug.Log("Connected to server...");
 
             SendJoinRequest();
         }
@@ -81,11 +80,11 @@ namespace WordSearchBattleShared.API
         {
             int bytesRead;
             string message;
-            byte[] data = new byte[4096];
             var token = cancellationTokenSource.Token;
 
             while (!token.IsCancellationRequested)
             {
+                byte[] data = new byte[1024];
                 bytesRead = await stream.ReadAsync(data, 0, data.Length, token);
                 
                 if (bytesRead == 0)
