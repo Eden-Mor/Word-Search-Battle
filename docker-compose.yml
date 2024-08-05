@@ -32,6 +32,7 @@ services:
       context: .
     ports:
       - 2943:8080
+      - 12345:12345
     secrets:
       - postgres-u
       - postgres-p
