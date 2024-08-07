@@ -45,33 +45,49 @@ namespace WordSearchBattleAPI.Managers
 
         private async Task HandleClient(TcpClient client)
         {
-            NetworkStream stream = client.GetStream();
-            byte[] buffer = new byte[256];
-            int bytesRead = await stream.ReadAsync(buffer);
-
-            var info = JsonSerializer.Deserialize<PlayerInfo>(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-
-            if (info != null && !string.IsNullOrEmpty(info.RoomCode))
+            try
             {
-                //Check if room exists, 
-                if (!gameSessions.ContainsKey(info.RoomCode))
+                NetworkStream stream = client.GetStream();
+                byte[] buffer = new byte[256];
+                int bytesRead = await stream.ReadAsync(buffer);
+
+                var stringval = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+                Console.WriteLine("String value joined: " + stringval);
+
+                var info = JsonSerializer.Deserialize<PlayerInfo>(stringval);
+
+                Console.WriteLine("Player joined: " + info?.PlayerName);
+
+                if (info != null && !string.IsNullOrEmpty(info.RoomCode))
                 {
-                    using var scope = _serviceProvider.CreateScope();
-                    GameContext _gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
-                    _gameContext.GameSessions.Add(new GameSession(GameSessionStatus.WaitingForPlayers, info.RoomCode));
-                    await _gameContext.SaveChangesAsync();
+                    //Check if room exists, 
+                    if (!gameSessions.ContainsKey(info.RoomCode))
+                    {
+                        Console.WriteLine("Room created: " + info?.RoomCode);
+
+                        using var scope = _serviceProvider.CreateScope();
+                        GameContext _gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
+                        _gameContext.GameSessions.Add(new GameSession(GameSessionStatus.WaitingForPlayers, info.RoomCode));
+                        await _gameContext.SaveChangesAsync();
 
 
-                    var cancelTokenSource = new CancellationTokenSource();
-                    gameSessions[info.RoomCode] = new(new GameSessionTCP(info, RemoveRoom, cancelTokenSource.Token, _serviceProvider), cancelTokenSource);
+                        var cancelTokenSource = new CancellationTokenSource();
+                        gameSessions[info.RoomCode] = new(new GameSessionTCP(info, RemoveRoom, cancelTokenSource.Token, _serviceProvider), cancelTokenSource);
+                    }
+
+                    Console.WriteLine(string.Format("Player {0} joined {1}.", info?.PlayerName, info?.RoomCode));
+                    gameSessions[info.RoomCode].Item1.AddClient(client, info);
                 }
-
-                gameSessions[info.RoomCode].Item1.AddClient(client, info);
+                else
+                {
+                    Console.WriteLine("Invalid room code.");
+                    client.Close();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Invalid room code.");
-                client.Close();
+                Console.WriteLine("Handle Client Error: " + ex.Message);
             }
         }
 
@@ -80,6 +96,7 @@ namespace WordSearchBattleAPI.Managers
         {
             gameSessions[roomCode].Item2.Cancel();
             gameSessions.Remove(roomCode);
+            Console.WriteLine(string.Format("Room {0} removed.", roomCode));
         }
     }
 
@@ -144,37 +161,29 @@ namespace WordSearchBattleAPI.Managers
                     }
 
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    var result = JsonSerializer.Deserialize<SessionData>(message);
-
-                    if (result != null)
-                        _ = HandleServerReceivedMessageAsync(result, playerInfo);
-
+                    
+                    try
+                    {
+                        var result = JsonSerializer.Deserialize<SessionData>(message);
+                        if (result != null)
+                            _ = HandleServerReceivedMessageAsync(result, playerInfo);
+                    }
+                    catch (JsonException ex)
+                    {
+                        Console.WriteLine($"JSON Deserialization error: {ex.Message}");
+                        Console.WriteLine($"JSON: {message}");
+                    }
 
                     pollInterval = 0;
                     while (!clientStream.DataAvailable)
                     {
-                        //if (pollInterval <= 50)
-                        //{
                         await Task.Delay(100);
-                        //    pollInterval++;
-                        //    continue;
-                        //}
-                        //else
-                        //{
-                        //    pollInterval = 0;
-                        //    bool isConnected = !(client.Client.Poll(1000, SelectMode.SelectRead) && client.Client.Available == 0);
-
-                        //    if (isConnected)
-                        //        continue;
-                        //    else
-                        //        breakOut = true;
-                        //}
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error reading from clientStream: {ex.Message}");
+                Console.WriteLine($"Error reading from client: {ex.Message}");
             }
             finally
             {
@@ -235,6 +244,8 @@ namespace WordSearchBattleAPI.Managers
             if (word != null)
                 return;
 
+            Console.WriteLine(string.Format("Word '{0}' completed by user {1}.", data.Word, data.PlayerName));
+
             playerInfo.WordsCorrect++;
             data.PlayerName = playerInfo.PlayerName;
 
@@ -272,6 +283,8 @@ namespace WordSearchBattleAPI.Managers
             if (masterPlayerInfo.PlayerName != playerInfo.PlayerName)
                 return;
 
+            Console.WriteLine(string.Format("Game started {0} by player {1}.", playerInfo.RoomCode, playerInfo.PlayerName));
+
             await StartGameAsync();
         }
 
@@ -295,42 +308,52 @@ namespace WordSearchBattleAPI.Managers
 
         public async Task StartGameAsync()
         {
-            var gameSession = GetGameSession();
-            if (gameSession == null)
-                return;
-
-
-            Tuple<string[], char[,]> tuple = WordSearchController.SetupGame();
-            var gameData = new Tuple<string[], string>(tuple.Item1, WordSearchController.ConvertCharArrayToStringGrid(tuple.Item2));
-
-            gameSession.WordList = gameData.Item1;
-            gameSession.LetterGrid = gameData.Item2;
-
-            using var scope = serviceProvider.CreateScope();
-            GameContext gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
-
-            await gameContext.SaveChangesAsync();
-
-            SessionData sessionData = new()
+            try
             {
-                DataType = SocketDataType.Start,
-                Data = JsonSerializer.Serialize(gameData)
-            };
+                var gameSession = GetGameSession();
+                if (gameSession == null)
+                    return;
 
-            SendDataToClients(sessionData);
 
-            Console.WriteLine($"Game session {masterPlayerInfo.RoomCode} started for all players.");
+                Tuple<string[], char[,]> tuple = WordSearchController.SetupGame();
+                var gameData = new Tuple<string[], string>(tuple.Item1, WordSearchController.ConvertCharArrayToStringGrid(tuple.Item2));
+
+                gameSession.WordList = gameData.Item1;
+                gameSession.LetterGrid = gameData.Item2;
+
+                using var scope = serviceProvider.CreateScope();
+                GameContext gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
+
+                await gameContext.SaveChangesAsync();
+
+                SessionData sessionData = new()
+                {
+                    DataType = SocketDataType.Start,
+                    Data = JsonSerializer.Serialize(gameData)
+                };
+
+                SendDataToClients(sessionData);
+
+                Console.WriteLine($"Game session {masterPlayerInfo.RoomCode} started for all players.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Start Game session Error: {ex.Message}.");
+            }
         }
 
 
         private void SendDataToClients(object dataSend)
         {
+            Console.WriteLine($"Trying to send data.");
             byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(dataSend));
 
             List<TcpClient> clientsToRemove = [];
 
             foreach (var client in clients)
             {
+                Console.WriteLine($"Trying to send data to client {client.Value.PlayerName}.");
+
                 try
                 {
                     NetworkStream stream = client.Key.GetStream();

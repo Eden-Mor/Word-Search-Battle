@@ -23,7 +23,7 @@ COPY --from=publish /app/publish .
 
 # Set permissions for DataWords.xml if it exists in the Resources directory
 USER root
-RUN [ -f /app/Resources/DataWords.xml ] && chmod 444 /app/Resources/DataWords.xml || true
+RUN [ -f /app/Resources/DataWords.xml ] && chmod 666 /app/Resources/DataWords.xml || true
 USER app
 
 

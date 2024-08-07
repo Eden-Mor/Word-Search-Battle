@@ -13,7 +13,7 @@ namespace WordSearchBattleShared.API
     {
         private TcpClient client;
         private NetworkStream stream;
-        private const string serverIp = "127.0.0.1";
+        private const string serverIp = "wordsearchbattle.api.edenmor.com";
         private CancellationTokenSource cancellationTokenSource = new();
 
         public Action<string> OnGameStart;
@@ -27,7 +27,7 @@ namespace WordSearchBattleShared.API
             cancellationTokenSource = new CancellationTokenSource();
 
             client = new TcpClient();
-            client.Connect(serverIp, Constants.Port);
+            client.Connect(serverIp, 6000);
             stream = client.GetStream();
 
             SendJoinRequest();

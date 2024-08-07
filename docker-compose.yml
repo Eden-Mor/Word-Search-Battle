@@ -23,6 +23,8 @@ services:
     secrets:
       - postgres-u
       - postgres-p
+    networks:
+      - backend
       
   api:
     restart: always
@@ -37,6 +39,8 @@ services:
       - postgres-u
       - postgres-p
       - jwt-key
+    networks:
+      - backend
       
 secrets:
   postgres-u:
@@ -48,3 +52,6 @@ secrets:
   
 volumes:
   word_search_db_data:
+  
+networks:
+  backend:
