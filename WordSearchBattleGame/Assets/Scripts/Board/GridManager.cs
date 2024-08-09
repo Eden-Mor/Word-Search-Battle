@@ -31,20 +31,23 @@ namespace Assets.Scripts.Board
         private float? cellHeight;
         private float? parentWidth;
         private float? parentHeight;
+        private RectTransform parentTransform;
+
+        private void Start()
+            => parentTransform = GetComponent<RectTransform>();
 
 
         public void CreateGrid()
         {
             // Clear existing children
-            foreach (Transform child in GetComponent<RectTransform>())
+            foreach (Transform child in parentTransform)
                 Destroy(child.gameObject);
 
             grid = new GridCell[rows, columns];
 
-            RectTransform rt = GetComponent<RectTransform>();
             GridLayoutGroup gl = GetComponent<GridLayoutGroup>();
-            parentWidth = rt.rect.width;
-            parentHeight = rt.rect.height;
+            parentWidth = parentTransform.rect.width;
+            parentHeight = parentTransform.rect.height;
             cellWidth = parentWidth / columns;
             cellHeight = parentHeight / rows;
 
@@ -82,13 +85,15 @@ namespace Assets.Scripts.Board
             return new Vector2(cellWidth.Value, cellHeight.Value);
         }
 
-        public Vector2 GetVectorPositionOfCell(IPosition position, bool fromCenter = false)
+        public Vector2 GetNormalizedVectorPositionOfCell(IPosition position, bool fromCenter = false)
         {
             var obj = GetCellAtPosition(position);
             if (obj == null)
                 return Vector2.zero;
 
-            return obj.GetComponent<Transform>().position;
+            var childRectTrans = obj.GetComponent<RectTransform>();
+
+            return childRectTrans.position;
         }
 
 

@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace WordSearchBattleShared.Models
 {
@@ -6,5 +7,7 @@ namespace WordSearchBattleShared.Models
     {
         int X { get; set; }
         int Y { get; set; }
+
+        public float magnitude => (float)Mathf.Sqrt(X * X + Y * Y);
     }
 }

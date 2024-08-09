@@ -15,11 +15,6 @@ public class GameBoardLogic
     public const string PLAYER_PREFS = "player_prefs";
 
     private bool _isGameOver = true;
-    private BoardGridSize _boardGridSize;
-
-    private int _rows;
-    private int _columns;
-
     private PlayerType _startingPlayer = PlayerType.PlayerO;
     private PlayerType _currentPlayer;
 
@@ -61,9 +56,6 @@ public class GameBoardLogic
         _userActionEvents.StartGameClicked += UserActionEvents_StartGameClicked;
         _userActionEvents.LoginToSocketClicked += UserActionEvents_LoginClicked;
 
-        // Set grid size based on params
-        _boardGridSize = new(_rows, _columns);
-
         _gridManager.OnWordSelect = CheckWordResult;
         _gameClient.OnGameStart = SetupGameFromString;
         _gameClient.OnPlayerJoined = OnPlayerJoined;
@@ -79,8 +71,12 @@ public class GameBoardLogic
 
         var end = PositionHelper.GetEndPosition(start, length, item.Direction);
 
-        _highlightManager.CreateHighlightBar(_gridManager.GetVectorPositionOfCell(start),
-                                             _gridManager.GetVectorPositionOfCell(end),
+
+        _highlightManager.CreateHighlightBar(_gridManager.GetNormalizedVectorPositionOfCell(start),
+                                             _gridManager.GetNormalizedVectorPositionOfCell(end),
+                                             start, 
+                                             end,
+                                             size: _gridManager.rows,
                                              50f);
     }
 
