@@ -43,7 +43,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An Exception occurred while trying to read the secret from directory '{directory}' with filename '{fileName}'. Error is: '{ex.Message}'");
+                ConsoleLog.WriteLine($"An Exception occurred while trying to read the secret from directory '{directory}' with filename '{fileName}'. Error is: '{ex.Message}'");
                 return string.Empty;
             }
         }

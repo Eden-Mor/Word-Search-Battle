@@ -1,5 +1,4 @@
 services:
-
   database:
     container_name: word_search_db
     image: postgres
@@ -29,12 +28,12 @@ services:
   api:
     restart: always
     container_name: word_search_api
+    image: wordsearchbattle-api:1.95
     build:
       dockerfile: WordSearchBattleAPI/Dockerfile
       context: .
     ports:
       - 2943:8080
-      - 12345:12345
     secrets:
       - postgres-u
       - postgres-p
@@ -44,11 +43,11 @@ services:
       
 secrets:
   postgres-u:
-    file: postgres-u.txt
+    file: /var/secrets/postgres-u.txt
   postgres-p:
-    file: postgres-p.txt
+    file: /var/secrets/postgres-p.txt
   jwt-key:
-    file: jwt-key.txt
+    file: /var/secrets/jwt-key.txt
   
 volumes:
   word_search_db_data:

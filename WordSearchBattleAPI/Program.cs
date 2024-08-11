@@ -6,6 +6,8 @@ using System.Text;
 using WordSearchBattleAPI.Helper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using WordSearchBattleAPI.Managers;
+using Microsoft.Extensions.Logging.Configuration;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -46,9 +48,13 @@ builder.Services.AddScoped<IRoomCodeGenerator, RoomCodeGeneratorService>();
 
 builder.Services.AddSingleton<GameServerManager>();
 
+builder.Logging.ClearProviders();
+builder.Logging.AddSimpleConsole(options => options.TimestampFormat = "[HH:mm:ss] ");
 
 
 var app = builder.Build();
+
+app.UseWebSockets();
 
 var gameServerManager = app.Services.GetRequiredService<GameServerManager>();
 

@@ -2,13 +2,16 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER app
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 12345
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+
 COPY ["WordSearchBattleAPI/WordSearchBattleAPI.csproj", "WordSearchBattleAPI/"]
 RUN dotnet restore "./WordSearchBattleAPI/./WordSearchBattleAPI.csproj"
+
+
 COPY . .
 WORKDIR "/src/WordSearchBattleAPI"
 RUN dotnet build "./WordSearchBattleAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
