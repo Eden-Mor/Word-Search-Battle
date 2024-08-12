@@ -26,7 +26,7 @@ public class HighlightManager : MonoBehaviour
         GameObject highlightBar = Instantiate(highlightBarPrefab, transform);
         HighlightBarController controller = highlightBar.GetComponent<HighlightBarController>();
 
-        if (startLetter.magnitude > endLetter.magnitude)
+        if (startLetter.magnitude < endLetter.magnitude)
         {
             // Swap the positions if startLetter has a greater magnitude than endLetter
             IPosition temp = startLetter;
@@ -34,11 +34,13 @@ public class HighlightManager : MonoBehaviour
             endLetter = temp;
         }
 
-        size -= 0.75f;
+        var lengthCorrection = 1 / size;
+
+        size -= 1;
 
         var minAnchor = new Vector2(startLetter.X / size, 1 - startLetter.Y / size);
         var maxAnchor = new Vector2(endLetter.X / size, 1 - endLetter.Y / size);
 
-        controller.Setup(start, end, minAnchor, maxAnchor, (Color)color, opacity, width);
+        controller.Setup(start, end, minAnchor, maxAnchor, (Color)color, opacity, width, lengthCorrection);
     }
 }

@@ -91,6 +91,27 @@ public class GameBoardLogic
 
     private void CheckWordResult(WordItem value)
     {
+        if (true) //DEBUG HIGHLIGHTS
+        {
+
+        Position start = new() { X = value.StartX, Y = value.StartY };
+
+        var length = value.Word.Length - 1;
+
+        var end = PositionHelper.GetEndPosition(start, length, value.Direction);
+
+        _highlightManager.CreateHighlightBar(_gridManager.GetNormalizedVectorPositionOfCell(start),
+                                             _gridManager.GetNormalizedVectorPositionOfCell(end),
+                                             start,
+                                             end,
+                                             size: _gridManager.rows,
+                                             50f,
+                                             Color.green);
+
+
+        }
+
+
         if (!_gameDataObject._wordList.Contains(value.Word))
             return;
 
