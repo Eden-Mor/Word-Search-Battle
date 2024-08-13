@@ -12,25 +12,23 @@ using System.Linq;
 using WordSearchBattleShared.Helpers;
 using UnityEngine.UI;
 
-#nullable enable
-
 namespace Assets.Scripts.Board
 {
     public class GridManager : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
     {
-        [SerializeField] private GameDataObject? _gameData;
+        [SerializeField] private GameDataObject _gameData;
 
-        public Action<WordItem>? OnWordSelect;
+        public Action<WordItem> OnWordSelect;
         public int rows;
         public int columns;
         public GameObject cellPrefab;
-        private GridCell[,]? grid;
-        private GridCell? firstCell = null;
-        private GridCell? lastCell = null;
-        private float? cellWidth;
-        private float? cellHeight;
-        private float? parentWidth;
-        private float? parentHeight;
+        private GridCell[,] grid;
+        private GridCell firstCell = null;
+        private GridCell lastCell = null;
+        private float cellWidth;
+        private float cellHeight;
+        private float parentWidth;
+        private float parentHeight;
         private RectTransform parentTransform;
 
         private void Start()
@@ -51,7 +49,7 @@ namespace Assets.Scripts.Board
             cellWidth = parentWidth / columns;
             cellHeight = parentHeight / rows;
 
-            gl.cellSize = new(cellWidth.Value, cellHeight.Value);
+            gl.cellSize = new(cellWidth, cellHeight);
 
             for (int y = 0; y < rows; y++)
             {
@@ -62,9 +60,9 @@ namespace Assets.Scripts.Board
                     var cellCol = cellObj.GetComponent<BoxCollider2D>();
                     var cellText = cellObj.GetComponent<TextMeshProUGUI>();
 
-                    cellText.text = _gameData?._letterGrid[x, y].ToString();
+                    cellText.text = _gameData._letterGrid[x, y].ToString();
 
-                    cellCol.size = new Vector2(cellWidth.Value, cellHeight.Value);
+                    cellCol.size = new Vector2(cellWidth, cellHeight);
 
                     GridCell cell = cellObj.GetComponent<GridCell>();
                     cell.Initialize(x, y);
@@ -79,10 +77,7 @@ namespace Assets.Scripts.Board
 
         public Vector2 GetCellSize()
         {
-            if (cellWidth == null || cellHeight == null)
-                return Vector2.zero;
-
-            return new Vector2(cellWidth.Value, cellHeight.Value);
+            return new Vector2(cellWidth, cellHeight);
         }
 
         public Vector2 GetNormalizedVectorPositionOfCell(IPosition position, bool fromCenter = false)
@@ -99,7 +94,7 @@ namespace Assets.Scripts.Board
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            GridCell? cell = GetCellUnderPointer(eventData);
+            GridCell cell = GetCellUnderPointer(eventData);
             if (cell == null)
                 return;
 
@@ -110,7 +105,7 @@ namespace Assets.Scripts.Board
 
         public void OnDrag(PointerEventData eventData)
         {
-            GridCell? cell = GetCellUnderPointer(eventData);
+            GridCell cell = GetCellUnderPointer(eventData);
 
             if (cell == null || firstCell == null)
                 return;
@@ -136,7 +131,7 @@ namespace Assets.Scripts.Board
                 return;
 
             foreach (var cell in selectionData.Item1)
-                sb.Append(_gameData?._letterGrid[cell.X, cell.Y]);
+                sb.Append(_gameData._letterGrid[cell.X, cell.Y]);
 
             ClearSelection(firstCell, lastCell);
 
@@ -152,7 +147,7 @@ namespace Assets.Scripts.Board
         }
 
 
-        private GridCell? GetCellUnderPointer(PointerEventData eventData)
+        private GridCell GetCellUnderPointer(PointerEventData eventData)
         {
             // Convert screen point to world point and get the cell
             Vector2 worldPoint = Camera.main.ScreenToWorldPoint(eventData.position);
@@ -166,7 +161,7 @@ namespace Assets.Scripts.Board
         private void HighlightCell(GridCell cell)
             => cell.SetHighlight(Color.black);
 
-        private void ClearSelection(GridCell? startCell, GridCell? endCell)
+        private void ClearSelection(GridCell startCell, GridCell endCell)
         {
             var selectionData = GetCellSelection(startCell, endCell);
             if (selectionData != null)
@@ -174,7 +169,7 @@ namespace Assets.Scripts.Board
                     cell.ClearHighlight();
         }
 
-        private Tuple<List<GridCell>, DirectionEnum>? GetCellSelection(GridCell? startCell, GridCell? endCell)
+        private Tuple<List<GridCell>, DirectionEnum> GetCellSelection(GridCell startCell, GridCell endCell)
         {
             if (grid == null)
                 throw new Exception("Grid was not created in GridManager before it was attempted to be used.");

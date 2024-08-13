@@ -12,12 +12,6 @@ using WordSearchBattleShared.Helpers;
 
 public class GameBoardLogic
 {
-    public const string PLAYER_PREFS = "player_prefs";
-
-    private bool _isGameOver = true;
-    private PlayerType _startingPlayer = PlayerType.PlayerO;
-    private PlayerType _currentPlayer;
-
     private GameView _gameView;
     private UserActionEvents _userActionEvents;
     private GameApiService _gameAPI;
@@ -26,9 +20,6 @@ public class GameBoardLogic
     private WordListManager _wordListManager;
     private GameClient _gameClient;
     private HighlightManager _highlightManager;
-    private List<KeyValuePair<PlayerType, BoardTilePosition>> _playerMoveList = new();
-
-    private string _savedMemoryJsonData = string.Empty;
 
     public GameBoardLogic(GameView gameView,
                           UserActionEvents userActionEvents,
@@ -52,7 +43,6 @@ public class GameBoardLogic
     public void Initialize()
     {
         // Subscribe to user action events
-        _userActionEvents.TileClicked += UserActionEvents_TileClicked;
         _userActionEvents.StartGameClicked += UserActionEvents_StartGameClicked;
         _userActionEvents.LoginToSocketClicked += UserActionEvents_LoginClicked;
 
@@ -89,7 +79,7 @@ public class GameBoardLogic
 
     private void CheckWordResult(WordItem value)
     {
-        if (false) //DEBUG HIGHLIGHTS
+        if (true) //DEBUG HIGHLIGHTS
         {
             Position start = new() { X = value.StartX, Y = value.StartY };
 
@@ -133,7 +123,6 @@ public class GameBoardLogic
     public void DeInitialize()
     {
         // Unsubscribe from user action events
-        _userActionEvents.TileClicked -= UserActionEvents_TileClicked;
         _userActionEvents.StartGameClicked -= UserActionEvents_StartGameClicked;
         _userActionEvents.LoginToSocketClicked -= UserActionEvents_LoginClicked;
 
@@ -194,30 +183,4 @@ public class GameBoardLogic
         await _gameClient.ConnectToServerAsync();
     }
 
-    private void UserActionEvents_TileClicked(BoardTilePosition tilePos)
-    {
-        // If the game is over, don't allow the tiles to be clicked
-        if (_isGameOver)
-            return;
-
-        // Add the current move to the list of moves both players have made
-        _playerMoveList.Add(new KeyValuePair<PlayerType, BoardTilePosition>(_currentPlayer, tilePos));
-        _gameView.SetTileSign(_currentPlayer, tilePos);
-
-        // Clear the move list and set game over so that tiles cannot be clicked
-        //if (gameWon || gameTie)
-        //{
-        //    _isGameOver = true;
-        //    _playerMoveList.Clear();
-
-        //    if (gameWon)
-        //        _gameView.GameWon(_currentPlayer);
-        //    else if (gameTie)
-        //        _gameView.GameTie();
-        //}
-
-        // Swap current player
-        //_currentPlayer.Swap();
-        _gameView.ChangeTurn(_currentPlayer);
-    }
 }

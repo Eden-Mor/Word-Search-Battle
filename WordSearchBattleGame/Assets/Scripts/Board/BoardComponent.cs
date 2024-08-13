@@ -30,8 +30,7 @@ namespace WordSearchBattle.Scripts
 
         public void Awake()
         {
-            _boardView.Initialize(GetComponentsInChildren<BoardTileView>());
-
+            _boardView.Initialize();
             _gameBoardLogic = new GameBoardLogic(_boardView, _boardEvents, _gameAPI, _gameData, _gridManager, _wordListManager, _GameClient, _HighlightManager);
             _gameBoardLogic.Initialize();
         }
@@ -49,11 +48,6 @@ namespace WordSearchBattle.Scripts
         public void OnLoginClicked()
         {
             _boardEvents.OnLoginToSocketClicked();
-        }
-
-        public void OnTileClicked(BoardTileView tileView)
-        {
-            _boardEvents.OnTileClicked(tileView);
         }
     }
 }
