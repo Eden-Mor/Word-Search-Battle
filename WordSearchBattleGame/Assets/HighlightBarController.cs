@@ -16,13 +16,12 @@ public class HighlightBarController : MonoBehaviour
     private Image image;
 
 
-    public void Setup(Vector2 start, Vector2 end, IPosition startLetter, IPosition endLetter, Color color, float opacity, float width, float rows)
+    public void Setup(IPosition startLetter, IPosition endLetter, Color color, float opacity, float width, float rows)
     {
-        var isDiagonal = startLetter.IsDiagonal(endLetter);
 
-        rectTransform.position = (start + end) / 2;
-        Vector2 direction = end - start;
+        Vector2 direction = new Vector2(endLetter.X, endLetter.Y) - new Vector2(startLetter.X, startLetter.Y);
         var isVert = startLetter.IsVert(endLetter);
+        var isDiagonal = startLetter.IsDiagonal(endLetter);
 
         float hypotenuse = 0f;
         if (isDiagonal)
@@ -71,8 +70,12 @@ public class HighlightBarController : MonoBehaviour
         rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, width * Random.Range(0.95f, 1.05f));
 
         float wordLength = startLetter.Distance(endLetter);
-        float randomRange = Mathf.Lerp(5f, 1f, wordLength / rows); // Adjust the range based on word length
+        float randomRange = Mathf.Lerp(10f, 1f, wordLength / rows); // Adjust the range based on word length, Linear intERPolation
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + Random.Range(-randomRange, randomRange);
+
+        //Since our coordinate system starts 0,0 at the top left corner, we need to adjust the angle on diagonals.
+        if (isDiagonal)
+            angle += 90f;
 
         rectTransform.rotation = Quaternion.Euler(0, 0, angle);
 
