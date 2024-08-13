@@ -20,5 +20,12 @@ namespace WordSearchBattleShared.Models
             => position.X == position2.X;
         public static bool IsHorz(this IPosition position, IPosition position2)
             => position.Y == position2.Y;
+
+        public static float Distance(this IPosition position, IPosition position2)
+        {
+            float num = position.X - position2.X;
+            float num2 = position.Y - position2.Y;
+            return (float)Math.Sqrt(num * num + num2 * num2);
+        }
     }
 }

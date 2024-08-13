@@ -29,19 +29,23 @@ public class HighlightBarController : MonoBehaviour
             hypotenuse = Mathf.Sqrt(2) / 1.6f;
 
 
-        float extraHypot =  Mathf.Abs(startLetter.Y - endLetter.Y) / rows * hypotenuse / 4;
+        float extraHypot = Mathf.Abs(startLetter.Y - endLetter.Y) / rows * hypotenuse / 4;
 
 
-        var anchorMinX = isVert
-            ? (endLetter.X - Mathf.Abs(startLetter.Y - endLetter.Y) / 2f) / rows
-            : (endLetter.X) / rows;
-            anchorMinX -= extraHypot;
+        var anchorMinX = (float)endLetter.X;
+        if (isVert)
+            anchorMinX -= Mathf.Abs(startLetter.Y - endLetter.Y) / 2f;
+        anchorMinX += Random.Range(-0.15f, 0.15f);
+        anchorMinX /= rows;
+        anchorMinX -= extraHypot;
 
 
-        var anchorMaxX = isVert
-            ? (startLetter.X + 1f + Mathf.Abs(startLetter.Y - endLetter.Y) / 2f) / rows
-            : (startLetter.X + 1f) / rows;
-            anchorMaxX += extraHypot;
+        var anchorMaxX = startLetter.X + 1f;
+        if (isVert)
+            anchorMaxX += Mathf.Abs(startLetter.Y - endLetter.Y) / 2f;
+        anchorMaxX += Random.Range(-0.15f, 0.15f);
+        anchorMaxX /= rows;
+        anchorMaxX += extraHypot;
 
 
         var midValue = (startLetter.Y + endLetter.Y + 1f) / 2;
@@ -64,9 +68,12 @@ public class HighlightBarController : MonoBehaviour
 
         // Set position, size, and rotation
         rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, length);
-        rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, width);
+        rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, width * Random.Range(0.95f, 1.05f));
 
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        float wordLength = startLetter.Distance(endLetter);
+        float randomRange = Mathf.Lerp(5f, 1f, wordLength / rows); // Adjust the range based on word length
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + Random.Range(-randomRange, randomRange);
+
         rectTransform.rotation = Quaternion.Euler(0, 0, angle);
 
         image.color = new Color(color.r, color.g, color.b, opacity);
