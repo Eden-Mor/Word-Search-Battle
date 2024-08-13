@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEngine.GraphicsBuffer;
+using WordSearchBattleShared.Models;
 
 public class HighlightBarController : MonoBehaviour
 {
@@ -16,31 +16,48 @@ public class HighlightBarController : MonoBehaviour
     private Image image;
 
 
-    //TO DO - ON DIAGONALS SET ANCHORS AS IF THE LINE HAD 0 ROTATION,
-    //    W
-    //    O
-    //[   R   ]
-    //    D
-    //    S
-
-    public void Setup(Vector2 start, Vector2 end, Vector2 anchorMin, Vector2 anchorMax, Color color, float opacity, float width, float lengthCorrection)
+    public void Setup(Vector2 start, Vector2 end, IPosition startLetter, IPosition endLetter, Color color, float opacity, float width, float rows)
     {
+        var isDiagonal = startLetter.IsDiagonal(endLetter);
+
         rectTransform.position = (start + end) / 2;
-
-
-        var pos = rectTransform.localPosition;
-        rectTransform.anchorMin = anchorMin;
-        rectTransform.anchorMax = anchorMax;
-        rectTransform.localPosition = pos;
-
-        // Calculate direction and length based on the difference between the start and end points
         Vector2 direction = end - start;
+        var isVert = startLetter.IsVert(endLetter);
+
+        float hypotenuse = 0f;
+        if (isDiagonal)
+            hypotenuse = Mathf.Sqrt(2) / 1.6f;
 
 
-        // Calculate the length in local space based on the parent size and anchor positions
+        float extraHypot =  Mathf.Abs(startLetter.Y - endLetter.Y) / rows * hypotenuse / 4;
+
+
+        var anchorMinX = isVert
+            ? (endLetter.X - Mathf.Abs(startLetter.Y - endLetter.Y) / 2f) / rows
+            : (endLetter.X) / rows;
+            anchorMinX -= extraHypot;
+
+
+        var anchorMaxX = isVert
+            ? (startLetter.X + 1f + Mathf.Abs(startLetter.Y - endLetter.Y) / 2f) / rows
+            : (startLetter.X + 1f) / rows;
+            anchorMaxX += extraHypot;
+
+
+        var midValue = (startLetter.Y + endLetter.Y + 1f) / 2;
+
+        var midMinY = (midValue + 0.25f) / rows;
+        var midMaxY = (midValue - 0.25f) / rows;
+
+        rectTransform.anchorMin = new Vector2(anchorMinX, 1 - midMinY);
+        rectTransform.anchorMax = new Vector2(anchorMaxX, 1 - midMaxY);
+
+        rectTransform.anchoredPosition = Vector2.zero;
+
+
         Vector2 anchorSize = new(
-            (anchorMax.x - anchorMin.x + lengthCorrection / 2) * parentTransform.rect.width,
-            (anchorMax.y - anchorMin.y - lengthCorrection / 2) * parentTransform.rect.height
+            (rectTransform.anchorMax.x - rectTransform.anchorMin.x) * parentTransform.rect.width,
+            (rectTransform.anchorMax.y - rectTransform.anchorMin.y) * parentTransform.rect.height
         );
 
         float length = anchorSize.magnitude;

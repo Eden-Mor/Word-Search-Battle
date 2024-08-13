@@ -30,12 +30,12 @@ public class GameBoardLogic
 
     private string _savedMemoryJsonData = string.Empty;
 
-    public GameBoardLogic(GameView gameView, 
-                          UserActionEvents userActionEvents, 
-                          GameApiService gameAPI, 
-                          GameDataObject gameDataObject, 
-                          GridManager gridManager, 
-                          WordListManager wordListManager, 
+    public GameBoardLogic(GameView gameView,
+                          UserActionEvents userActionEvents,
+                          GameApiService gameAPI,
+                          GameDataObject gameDataObject,
+                          GridManager gridManager,
+                          WordListManager wordListManager,
                           GameClient _GameClient,
                           HighlightManager highlightManager)
     {
@@ -74,10 +74,10 @@ public class GameBoardLogic
 
         _highlightManager.CreateHighlightBar(_gridManager.GetNormalizedVectorPositionOfCell(start),
                                              _gridManager.GetNormalizedVectorPositionOfCell(end),
-                                             start, 
+                                             start,
                                              end,
                                              size: _gridManager.rows,
-                                             50f);
+                                             60f);
     }
 
     private void OnPlayerJoined(PlayerJoinedInfo info)
@@ -91,24 +91,21 @@ public class GameBoardLogic
 
     private void CheckWordResult(WordItem value)
     {
-        if (true) //DEBUG HIGHLIGHTS
+        if (false) //DEBUG HIGHLIGHTS
         {
+            Position start = new() { X = value.StartX, Y = value.StartY };
 
-        Position start = new() { X = value.StartX, Y = value.StartY };
+            var length = value.Word.Length - 1;
 
-        var length = value.Word.Length - 1;
+            var end = PositionHelper.GetEndPosition(start, length, value.Direction);
 
-        var end = PositionHelper.GetEndPosition(start, length, value.Direction);
-
-        _highlightManager.CreateHighlightBar(_gridManager.GetNormalizedVectorPositionOfCell(start),
-                                             _gridManager.GetNormalizedVectorPositionOfCell(end),
-                                             start,
-                                             end,
-                                             size: _gridManager.rows,
-                                             50f,
-                                             Color.green);
-
-
+            _highlightManager.CreateHighlightBar(_gridManager.GetNormalizedVectorPositionOfCell(start),
+                                                 _gridManager.GetNormalizedVectorPositionOfCell(end),
+                                                 start,
+                                                 end,
+                                                 size: _gridManager.rows,
+                                                 60f,
+                                                 Color.green);
         }
 
 

@@ -21,6 +21,19 @@ namespace WordSearchBattleShared.API
         public Action<WordItem> OnWordComplete;
         public PlayerJoinInfo playerJoinInfo = new();
 
+        private async void OnDestroy()
+        {
+            try
+            {
+                if (socket != null)
+                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed game", CancellationToken.None);
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+
         public async Task ConnectToServerAsync()
         {
             await DisconnectAsync();
