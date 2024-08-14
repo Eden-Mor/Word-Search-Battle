@@ -40,6 +40,7 @@ public class GameBoardLogic
         _highlightManager = highlightManager;
     }
 
+
     public void Initialize()
     {
         // Subscribe to user action events
@@ -51,6 +52,7 @@ public class GameBoardLogic
         _gameClient.OnPlayerJoined = OnPlayerJoined;
         _gameClient.OnWordComplete = MarkWord;
     }
+
 
     private void MarkWord(WordItem item)
     {
@@ -68,6 +70,7 @@ public class GameBoardLogic
                                              60f);
     }
 
+
     private void OnPlayerJoined(PlayerJoinedInfo info)
     {
         StringBuilder sb = new();
@@ -77,9 +80,10 @@ public class GameBoardLogic
         _gameView.AddPlayerJoinedText(sb.ToString());
     }
 
+
     private void CheckWordResult(WordItem value)
     {
-        if (true) //DEBUG HIGHLIGHTS
+        if (false) //DEBUG HIGHLIGHTS
         {
             Position start = new() { X = value.StartX, Y = value.StartY };
 
@@ -103,6 +107,7 @@ public class GameBoardLogic
         _gameClient.SendWordFound(value);
     }
 
+
     private void SetupGame()
     {
         if (_gameDataObject._wordList.Count <= 0)
@@ -122,10 +127,6 @@ public class GameBoardLogic
 
     public void DeInitialize()
     {
-        // Unsubscribe from user action events
-        _userActionEvents.StartGameClicked -= UserActionEvents_StartGameClicked;
-        _userActionEvents.LoginToSocketClicked -= UserActionEvents_LoginClicked;
-
         _gameView = null;
         _userActionEvents = null;
     }
@@ -145,8 +146,6 @@ public class GameBoardLogic
         //// Reset the game state
         //_isGameOver = false;
     }
-
-
 
 
     public static char[,] ConvertToCharArray(string input, char separator)

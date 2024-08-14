@@ -54,7 +54,7 @@ builder.Logging.AddSimpleConsole(options => options.TimestampFormat = "[HH:mm:ss
 
 var app = builder.Build();
 
-app.UseWebSockets();
+app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(2) });
 
 var gameServerManager = app.Services.GetRequiredService<GameServerManager>();
 

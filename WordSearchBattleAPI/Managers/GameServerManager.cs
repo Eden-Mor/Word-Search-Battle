@@ -43,6 +43,7 @@ namespace WordSearchBattleAPI.Managers
 
                     var cancelTokenSource = new CancellationTokenSource();
                     gameSessions[info.RoomCode] = new(new GameRoomManager(info, RemoveRoom, serviceProvider, cancelTokenSource.Token), cancelTokenSource);
+                    _ = gameSessions[info.RoomCode].Item1.CleanupSocketsAsync();
                 }
 
                 ConsoleLog.WriteLine(string.Format("Player {0} joined {1}.", info?.PlayerName, info?.RoomCode));

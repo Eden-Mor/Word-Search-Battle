@@ -12,20 +12,31 @@ namespace WordSearchBattleAPI.Managers
 {
     public class GameRoomManager(PlayerInfo masterPlayerInfo, Action<string> removeRoom, IServiceProvider serviceProvider, CancellationToken cancellationToken)
     {
-        private readonly Dictionary<WebSocket, PlayerInfo> clients = [];
+        private readonly Dictionary<WebSocket, PlayerInfo> sockets = [];
 
-        public async Task AddClient(WebSocket client, PlayerInfo info)
+        public async Task CleanupSocketsAsync()
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+
+                foreach (var socket in sockets.Keys)
+                    if (socket.State != WebSocketState.Open)
+                        RemoveClient(socket);
+            }
+        }
+
+        public async Task AddClient(WebSocket socket, PlayerInfo info)
         {
             FindAndReplacePlayerName(info);
 
-            clients.Add(client, info);
+            sockets.Add(socket, info);
             ConsoleLog.WriteLine($"Client added to game session {info.RoomCode}...");
 
             await SendPlayerJoinedData(info);
-            await ReadStreamRecursively(client, info);
+            await ReadStreamRecursively(socket, info);
 
             ConsoleLog.WriteLine($"Client stopped reading recursively.");
-
         }
 
 
@@ -34,28 +45,26 @@ namespace WordSearchBattleAPI.Managers
             byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(dataSend));
             List<WebSocket> clientsToRemove = [];
 
-            foreach (var client in clients)
+            foreach (var socketItem in sockets)
             {
-                var socket = client.Key;
+                var socket = socketItem.Key;
                 try
                 {
-                    if (client.Key.State != WebSocketState.Open)
+                    if (socket.State != WebSocketState.Open)
                     {
-                        await socket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Closed while trying to send data.", CancellationToken.None);
-                        clientsToRemove.Add(client.Key);
+                        clientsToRemove.Add(socket);
                         continue;
                     }
 
-                    await client.Key.SendAsync(new ArraySegment<byte>(data, 0, data.Length),
+                    await socket.SendAsync(new ArraySegment<byte>(data, 0, data.Length),
                                                WebSocketMessageType.Text,
                                                true,
                                                cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    await client.Key.CloseAsync(WebSocketCloseStatus.InternalServerError, ex.Message, CancellationToken.None);
-                    client.Key.Dispose();
-                    clientsToRemove.Add(client.Key);
+                    await socket.CloseAsync(WebSocketCloseStatus.InternalServerError, ex.Message, CancellationToken.None);
+                    clientsToRemove.Add(socket);
                 }
             }
 
@@ -122,9 +131,9 @@ namespace WordSearchBattleAPI.Managers
 
         private void RemoveClient(WebSocket client)
         {
-            clients.Remove(client);
+            sockets.Remove(client);
 
-            if (clients.Count == 0)
+            if (sockets.Count == 0)
                 removeRoom?.Invoke(masterPlayerInfo.RoomCode!);
         }
 
@@ -137,14 +146,14 @@ namespace WordSearchBattleAPI.Managers
             {
                 if (dupCount == 0)
                 {
-                    if (clients.Any(x => x.Value.PlayerName == info.PlayerName))
+                    if (sockets.Any(x => x.Value.PlayerName == info.PlayerName))
                         FindAndReplacePlayerName(info, dupCount + 1);
                     else
                         return;
                 }
                 else
                 {
-                    if (clients.Any(x => x.Value.PlayerName == info.PlayerName + " " + dupCount))
+                    if (sockets.Any(x => x.Value.PlayerName == info.PlayerName + " " + dupCount))
                         FindAndReplacePlayerName(info, dupCount + 1);
                     else
                         info.PlayerName += " " + (dupCount + 1);
@@ -225,7 +234,7 @@ namespace WordSearchBattleAPI.Managers
             PlayerJoinedInfo playerJoinedInfo = new()
             {
                 IsJoined = true,
-                PlayerCount = clients.Count,
+                PlayerCount = sockets.Count,
                 PlayerName = client.PlayerName,
             };
 

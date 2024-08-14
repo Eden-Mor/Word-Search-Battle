@@ -18,17 +18,15 @@ public class HighlightBarController : MonoBehaviour
 
     public void Setup(IPosition startLetter, IPosition endLetter, Color color, float opacity, float width, float rows)
     {
-
         Vector2 direction = new Vector2(endLetter.X, endLetter.Y) - new Vector2(startLetter.X, startLetter.Y);
         var isVert = startLetter.IsVert(endLetter);
         var isDiagonal = startLetter.IsDiagonal(endLetter);
 
         float hypotenuse = 0f;
         if (isDiagonal)
-            hypotenuse = Mathf.Sqrt(2) / 1.6f;
+            hypotenuse = 0.221f; // Sqrt(2) / 1.6f / 4
 
-
-        float extraHypot = Mathf.Abs(startLetter.Y - endLetter.Y) / rows * hypotenuse / 4;
+        float extraHypot = Mathf.Abs(startLetter.Y - endLetter.Y) / rows * hypotenuse;
 
 
         var anchorMinX = (float)endLetter.X;
