@@ -1,4 +1,5 @@
-﻿using WordSearchBattleShared.Enums;
+﻿using System.Drawing;
+using WordSearchBattleShared.Enums;
 
 namespace WordSearchBattleAPI.Models
 {
@@ -16,7 +17,14 @@ namespace WordSearchBattleAPI.Models
         public int StartX { get; set; }
         public int StartY { get; set; }
         public DirectionEnum Direction { get; set; }
+        public KnownColor? Color { get; set; }
         public string? PlayerName { get; set; }
+    }
+
+    public class ColorPickerItem
+    {
+        public KnownColor? OldColor { get; set; }
+        public KnownColor NewColor { get; set; }
     }
 
     public class PlayerJoinedInfo
@@ -31,6 +39,7 @@ namespace WordSearchBattleAPI.Models
         public int WordsCorrect { get; set; } = 0;
         public string? PlayerName { get; set; }
         public string? RoomCode { get; set; }
+        public KnownColor? ColorEnum { get; set; }
     }
 
     public enum SocketDataType
@@ -39,6 +48,7 @@ namespace WordSearchBattleAPI.Models
         Start = 1,
         End = 2,
         WordCompleted = 3,
-        PlayerJoined = 4
+        PlayerJoined = 4,
+        ColorChanged = 5
     }
 }

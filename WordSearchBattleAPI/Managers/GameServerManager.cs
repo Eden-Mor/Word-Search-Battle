@@ -5,12 +5,13 @@ using WordSearchBattleAPI.Database;
 using WordSearchBattleShared.Enums;
 using System.Net.WebSockets;
 using WordSearchBattleAPI.Helper;
+using System.Collections.Concurrent;
 
 namespace WordSearchBattleAPI.Managers
 {
     public class GameServerManager(IServiceProvider serviceProvider)
     {
-        private Dictionary<string, Tuple<GameRoomManager, CancellationTokenSource>> gameSessions = [];
+        private ConcurrentDictionary<string, Tuple<GameRoomManager, CancellationTokenSource>> gameSessions = [];
 
         public async Task HandleNewUser(WebSocket webSocket)
         {
@@ -26,7 +27,7 @@ namespace WordSearchBattleAPI.Managers
                 if (info == null || string.IsNullOrEmpty(info.RoomCode))
                 {
                     ConsoleLog.WriteLine("Invalid room code.");
-                    await webSocket.CloseAsync(WebSocketCloseStatus.Empty, "No room found", CancellationToken.None);
+                    await webSocket.CloseAsync(WebSocketCloseStatus.Empty, "No room found.", CancellationToken.None);
                     return;
                 }
 
@@ -43,7 +44,7 @@ namespace WordSearchBattleAPI.Managers
 
                     var cancelTokenSource = new CancellationTokenSource();
                     gameSessions[info.RoomCode] = new(new GameRoomManager(info, RemoveRoom, serviceProvider, cancelTokenSource.Token), cancelTokenSource);
-                    _ = gameSessions[info.RoomCode].Item1.CleanupSocketsAsync();
+                    _ = gameSessions[info.RoomCode].Item1.CleanupSocketsAsync(cancelTokenSource.Token);
                 }
 
                 ConsoleLog.WriteLine(string.Format("Player {0} joined {1}.", info?.PlayerName, info?.RoomCode));
@@ -59,7 +60,7 @@ namespace WordSearchBattleAPI.Managers
         private void RemoveRoom(string roomCode)
         {
             gameSessions[roomCode].Item2.Cancel();
-            gameSessions.Remove(roomCode);
+            gameSessions.Remove(roomCode, out _);
             ConsoleLog.WriteLine(string.Format("Room {0} removed.", roomCode));
         }
     }

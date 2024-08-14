@@ -5,24 +5,26 @@ using WordSearchBattleAPI.Controllers;
 using WordSearchBattleAPI.Database;
 using WordSearchBattleAPI.Models;
 using System.Net.WebSockets;
-using Microsoft.AspNetCore.DataProtection;
 using WordSearchBattleAPI.Helper;
+using System.Collections.Concurrent;
+using System.Drawing;
 
 namespace WordSearchBattleAPI.Managers
 {
     public class GameRoomManager(PlayerInfo masterPlayerInfo, Action<string> removeRoom, IServiceProvider serviceProvider, CancellationToken cancellationToken)
     {
-        private readonly Dictionary<WebSocket, PlayerInfo> sockets = [];
+        private readonly ConcurrentDictionary<WebSocket, PlayerInfo> sockets = [];
 
-        public async Task CleanupSocketsAsync()
+        public async Task CleanupSocketsAsync(CancellationToken token)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(30), token);
 
-                foreach (var socket in sockets.Keys)
-                    if (socket.State != WebSocketState.Open)
-                        RemoveClient(socket);
+                if (!token.IsCancellationRequested)
+                    foreach (var socket in sockets.Keys)
+                        if (socket.State != WebSocketState.Open)
+                            RemoveClient(socket);
             }
         }
 
@@ -30,19 +32,28 @@ namespace WordSearchBattleAPI.Managers
         {
             FindAndReplacePlayerName(info);
 
-            sockets.Add(socket, info);
-            ConsoleLog.WriteLine($"Client added to game session {info.RoomCode}...");
+            if (!sockets.TryAdd(socket, info))
+            {
+                ConsoleLog.WriteLine($"Socket was not added to game session {info.RoomCode}.");
+                return;
+            }
+
+            ConsoleLog.WriteLine($"Socket added to game session {info.RoomCode}.");
 
             await SendPlayerJoinedData(info);
             await ReadStreamRecursively(socket, info);
-
-            ConsoleLog.WriteLine($"Client stopped reading recursively.");
         }
 
 
-        private async Task SendDataToClientsAsync(object dataSend)
+        private async Task SendDataToClientsAsync(SocketDataType dataType, object dataToSend)
         {
-            byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(dataSend));
+            SessionData sessionData = new()
+            {
+                DataType = dataType,
+                Data = JsonSerializer.Serialize(dataToSend)
+            };
+
+            byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(sessionData));
             List<WebSocket> clientsToRemove = [];
 
             foreach (var socketItem in sockets)
@@ -87,8 +98,7 @@ namespace WordSearchBattleAPI.Managers
 
                     if (socket.State != WebSocketState.Open || receiveResult.Count == 0)
                     {
-                        await socket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Closed while trying to send data.", CancellationToken.None);
-                        ConsoleLog.WriteLine($"Client disconnected from room {playerInfo.RoomCode}, player {playerInfo.PlayerName}.");
+                        ConsoleLog.WriteLine($"Socket disconnected from room {playerInfo.RoomCode}, player {playerInfo.PlayerName}.");
                         break;
                     }
 
@@ -107,7 +117,7 @@ namespace WordSearchBattleAPI.Managers
             {
                 await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", cancellationToken);
                 RemoveClient(socket);
-                ConsoleLog.WriteLine($"Closed socket finally, room {playerInfo.RoomCode}, player {playerInfo.PlayerName}.");
+                ConsoleLog.WriteLine($"Closed socket. Room {playerInfo.RoomCode}, Player {playerInfo.PlayerName}.");
             }
         }
 
@@ -124,14 +134,51 @@ namespace WordSearchBattleAPI.Managers
                     await StartRequestedAsync(playerInfo);
                     break;
                 case SocketDataType.WordCompleted:
-                    await WordComplete(result, playerInfo);
+                    await WordCompleteAsync(result.Data, playerInfo);
+                    break;
+                case SocketDataType.ColorChanged:
+                    await PickedColorAsync(result.Data, playerInfo);
                     break;
             }
         }
 
+
+        private SemaphoreSlim _pickColorSemaphor = new(1, 1);
+
+        private async Task PickedColorAsync(string? data, PlayerInfo playerInfo)
+        {
+            await _pickColorSemaphor.WaitAsync(cancellationToken);
+            try
+            {
+                if (data == null || !int.TryParse(data, out var knownColorInt)) 
+                    return;
+
+                var colorEnum = (KnownColor)knownColorInt;
+                if (!Enum.IsDefined(typeof(KnownColor), colorEnum))
+                    return;
+
+                if (sockets.Any(x => x.Value.ColorEnum == colorEnum))
+                    return;
+
+                var currentColor = playerInfo.ColorEnum;
+                playerInfo.ColorEnum = colorEnum;
+
+                await SendOutColorChanged(new ColorPickerItem() { OldColor = currentColor, NewColor = colorEnum });
+            }
+            finally
+            {
+                _pickColorSemaphor.Release();
+            }
+        }
+
+
+        private async Task SendOutColorChanged(ColorPickerItem data)
+            => await SendDataToClientsAsync(SocketDataType.ColorChanged, data);
+
+
         private void RemoveClient(WebSocket client)
         {
-            sockets.Remove(client);
+            sockets.TryRemove(client, out _);
 
             if (sockets.Count == 0)
                 removeRoom?.Invoke(masterPlayerInfo.RoomCode!);
@@ -162,42 +209,53 @@ namespace WordSearchBattleAPI.Managers
         }
 
 
-        private async Task WordComplete(SessionData result, PlayerInfo playerInfo)
+        private SemaphoreSlim _wordCompleteSemaphor = new(1, 1);
+        private async Task WordCompleteAsync(string? data, PlayerInfo playerInfo)
         {
-            var data = JsonSerializer.Deserialize<WordItem>(result.Data ?? string.Empty);
+            await _wordCompleteSemaphor.WaitAsync(cancellationToken);
+            try
+            {
+                var wordItem = JsonSerializer.Deserialize<WordItem>(data ?? string.Empty);
 
-            if (data == null)
-                return;
+                if (wordItem == null)
+                    return;
 
-            var gameSession = GetGameSession();
+                var gameSession = GetGameSession();
 
-            if (gameSession == null)
-                return;
+                if (gameSession == null)
+                    return;
 
-            if (!gameSession.WordList?.Any(x => x == data.Word) ?? false)
-                return;
+                if (!gameSession.WordList?.Any(x => x == wordItem.Word) ?? false)
+                    return;
 
-            using var scope = serviceProvider.CreateScope();
+                using var scope = serviceProvider.CreateScope();
 
-            GameContext gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
+                GameContext gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
 
-            var word = gameContext.WordList.Where(x => x.GameSessionId == gameSession.GameSessionId).Where(x => x.StartX == data.StartX && x.StartY == data.StartY && x.Direction == data.Direction).FirstOrDefault();
-            if (word != null)
-                return;
+                var word = gameContext.WordList.Where(x => x.GameSessionId == gameSession.GameSessionId).Where(x => x.StartX == wordItem.StartX && x.StartY == wordItem.StartY && x.Direction == wordItem.Direction).FirstOrDefault();
+                if (word != null)
+                    return;
 
-            ConsoleLog.WriteLine($"Word '{data.Word}' completed by user {data.PlayerName}.");
+                ConsoleLog.WriteLine($"Word '{wordItem.Word}' completed by user {wordItem.PlayerName}.");
 
-            playerInfo.WordsCorrect++;
-            data.PlayerName = playerInfo.PlayerName;
+                playerInfo.WordsCorrect++;
+                wordItem.PlayerName = playerInfo.PlayerName;
+                wordItem.Color = playerInfo.ColorEnum;
 
-            //This is where you would check if the word is actually on the grid in that specific location (or above this method).
+                //This is where you would check if the word is actually on the grid in that specific location (or above this method).
 
-            WordListItem completedWord = new() { Direction = data.Direction, GameSessionId = gameSession.GameSessionId, Word = data.Word, StartX = data.StartX, StartY = data.StartY };
-            gameContext.WordList.Add(completedWord);
-            _ = gameContext.SaveChangesAsync();
+                WordListItem completedWord = new() { Direction = wordItem.Direction, GameSessionId = gameSession.GameSessionId, Word = wordItem.Word, StartX = wordItem.StartX, StartY = wordItem.StartY };
+                gameContext.WordList.Add(completedWord);
+                await gameContext.SaveChangesAsync();
 
 
-            await SendOutWordCompleted(data);
+                await SendOutWordCompleted(wordItem);
+
+            }
+            finally
+            {
+                _wordCompleteSemaphor.Release();
+            }
         }
 
 
@@ -209,15 +267,8 @@ namespace WordSearchBattleAPI.Managers
         }
 
         private async Task SendOutWordCompleted(WordItem data)
-        {
-            SessionData sessionData = new()
-            {
-                DataType = SocketDataType.WordCompleted,
-                Data = JsonSerializer.Serialize(data)
-            };
-
-            await SendDataToClientsAsync(sessionData);
-        }
+            => await SendDataToClientsAsync(SocketDataType.WordCompleted, data);
+        
 
         private async Task StartRequestedAsync(PlayerInfo playerInfo)
         {
@@ -238,13 +289,7 @@ namespace WordSearchBattleAPI.Managers
                 PlayerName = client.PlayerName,
             };
 
-            SessionData sessionData = new()
-            {
-                DataType = SocketDataType.PlayerJoined,
-                Data = JsonSerializer.Serialize(playerJoinedInfo)
-            };
-
-            await SendDataToClientsAsync(sessionData);
+            await SendDataToClientsAsync(SocketDataType.PlayerJoined, playerJoinedInfo);
         }
 
         public async Task StartGameAsync()
@@ -254,6 +299,22 @@ namespace WordSearchBattleAPI.Managers
                 var gameSession = GetGameSession();
                 if (gameSession == null)
                     return;
+
+                var playersWithNoColor = sockets.Where(x => x.Value.ColorEnum == null).ToList();
+                
+                foreach (var player in playersWithNoColor)
+                {
+                    while (true)
+                    {
+                        var randomColor = Random.Shared.Next((int)KnownColor.AliceBlue, (int)KnownColor.RebeccaPurple);
+
+                        if (sockets.Any(x => x.Value.ColorEnum != null && (int)x.Value.ColorEnum == randomColor))
+                            continue;
+
+                        player.Value.ColorEnum = (KnownColor)randomColor;
+                        break;
+                    }
+                }
 
 
                 Tuple<string[], char[,]> tuple = WordSearchController.SetupGame();
@@ -267,13 +328,7 @@ namespace WordSearchBattleAPI.Managers
 
                 await gameContext.SaveChangesAsync();
 
-                SessionData sessionData = new()
-                {
-                    DataType = SocketDataType.Start,
-                    Data = JsonSerializer.Serialize(gameData)
-                };
-
-                await SendDataToClientsAsync(sessionData);
+                await SendDataToClientsAsync(SocketDataType.Start, gameData);
 
                 ConsoleLog.WriteLine($"Game session {masterPlayerInfo.RoomCode} started for all players.");
             }

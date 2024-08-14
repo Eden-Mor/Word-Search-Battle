@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using WordSearchBattleShared.Enums;
 
 namespace WordSearchBattleShared.Models
@@ -18,6 +19,7 @@ namespace WordSearchBattleShared.Models
         public int StartY;
         public DirectionEnum Direction;
         public string PlayerName;
+        public KnownColor Color;
     }
 
     [Serializable]

@@ -12,9 +12,9 @@ namespace WordSearchBattleShared.API
     public class GameClient : MonoBehaviour
     {
         private ClientWebSocket socket;
-        private readonly Uri _serverUri = new("ws://194.164.203.182:2943/ws");
+        //private readonly Uri _serverUri = new("ws://194.164.203.182:2943/ws");
         //private readonly Uri _serverUri = new("wss://localhost:7232/ws");
-        //private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
+        private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
         private CancellationTokenSource cancellationTokenSource = new();
         public Action<string> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
@@ -100,8 +100,7 @@ namespace WordSearchBattleShared.API
 
                     if (receivedResult.Count == 0)
                     {
-                        Debug.LogError($"ReceivedResult was 0, disconnecting.");
-                        await DisconnectAsync();
+                        Debug.Log($"ReceivedResult was 0, disconnecting.");
                         return;
                     }
 

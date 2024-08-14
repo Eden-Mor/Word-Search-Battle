@@ -16,7 +16,9 @@ namespace WordSearchBattleAPI.Controllers
                 {
                     using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
                     await gameServerMaster.HandleNewUser(webSocket);
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Finished handling user.", CancellationToken.None);
+                    
+                    if (webSocket.State == WebSocketState.Open)
+                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Finished handling user.", CancellationToken.None);
                 }
                 else
                 {
@@ -26,7 +28,6 @@ namespace WordSearchBattleAPI.Controllers
             catch (Exception ex)
             {
                 ConsoleLog.WriteLine(ex.Message);
-                HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
             }
         }
     }

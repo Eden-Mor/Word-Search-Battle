@@ -63,11 +63,14 @@ public class GameBoardLogic
 
         var end = PositionHelper.GetEndPosition(start, length, item.Direction);
 
+        var color = System.Drawing.Color.FromKnownColor((System.Drawing.KnownColor)item.Color);
+
 
         _highlightManager.CreateHighlightBar(start,
                                              end,
                                              size: _gridManager.rows,
-                                             60f);
+                                             60f,
+                                             new Color(color.R / 255f, color.G / 255f, color.B / 255f));
     }
 
 
