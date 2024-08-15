@@ -1,48 +1,30 @@
 ﻿using WordSearchBattleShared.Models;
 using System;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using UnityEngine;
-using System.Threading.Tasks;
-using System.Net.WebSockets;
+using WebSocketSharp;
+using System.Collections;
+using PimDeWitte.UnityMainThreadDispatcher;
 
 namespace WordSearchBattleShared.API
 {
     public class GameClient : MonoBehaviour
     {
-        private ClientWebSocket socket;
+        private WebSocket socket;
+        private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
         //private readonly Uri _serverUri = new("ws://194.164.203.182:2943/ws");
         //private readonly Uri _serverUri = new("wss://localhost:7232/ws");
-        private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
-        private CancellationTokenSource cancellationTokenSource = new();
         public Action<string> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
         public PlayerJoinInfo playerJoinInfo = new();
 
-        private async void OnDestroy()
+        public void ConnectToServer()
         {
             try
             {
-                if (socket != null)
-                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed game", CancellationToken.None);
-            }
-            catch (Exception)
-            {
-
-            }
-        }
-
-        public async Task ConnectToServerAsync()
-        {
-            await DisconnectAsync();
-            cancellationTokenSource = new CancellationTokenSource();
-            socket = new ClientWebSocket();
-
-            try
-            {
-                await socket.ConnectAsync(_serverUri, cancellationTokenSource.Token);
+                Disconnect();
+                SetUpSocket();
                 SendJoinRequest();
             }
             catch (Exception ex)
@@ -51,14 +33,42 @@ namespace WordSearchBattleShared.API
             }
         }
 
-        private async Task DisconnectAsync()
+        private void SetUpSocket()
+        {
+
+            socket = new(_serverUri.ToString());
+
+            socket.OnMessage += (sender, e) =>
+            {
+                try
+                {
+                    UnityMainThreadDispatcher.Instance().Enqueue(ReadSocketData(e.Data));
+                }
+                catch (Exception ex)
+                {
+
+                }
+            };
+
+            socket.OnOpen += (sender, e) =>
+            {
+                Debug.Log("WebSocket connection opened.");
+            };
+
+            socket.OnClose += (sender, e) =>
+            {
+                Debug.Log("WebSocket connection closed.");
+            };
+
+            socket.Connect();
+        }
+
+        private void Disconnect()
         {
             try
             {
-                cancellationTokenSource.Cancel();
-
-                if (socket != null && socket.State == WebSocketState.Open)
-                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Left room.", CancellationToken.None);
+                if (socket != null && socket.ReadyState == WebSocketState.Open)
+                    socket.CloseAsync(CloseStatusCode.Normal, "Left room.");
             }
             catch (Exception ex)
             {
@@ -66,18 +76,18 @@ namespace WordSearchBattleShared.API
             }
         }
 
-        private async Task SendData(string dataString)
+        private IEnumerator SendData(string dataString)
         {
             try
             {
-                if (socket.State != WebSocketState.Open)
+                if (socket.ReadyState != WebSocketState.Open)
                 {
-                    await DisconnectAsync();
-                    return;
+                    Disconnect();
+                    yield break;
                 }
 
                 byte[] data = Encoding.UTF8.GetBytes(dataString);
-                await socket.SendAsync(data, WebSocketMessageType.Text, true, cancellationTokenSource.Token);
+                socket.Send(data); //may use async to do an "On complete"
             }
             catch (Exception ex)
             {
@@ -85,49 +95,26 @@ namespace WordSearchBattleShared.API
             }
         }
 
-        private async Task ReadSocketData()
+        private IEnumerator ReadSocketData(string data)
         {
             try
             {
-                WebSocketReceiveResult receivedResult;
-                string message;
-                var token = cancellationTokenSource.Token;
+                var result = JsonUtility.FromJson<SessionData>(data);
 
-                while (!token.IsCancellationRequested)
-                {
-                    byte[] data = new byte[1024];
-                    receivedResult = await socket.ReceiveAsync(data, token);
-
-                    if (receivedResult.Count == 0)
-                    {
-                        Debug.Log($"ReceivedResult was 0, disconnecting.");
-                        return;
-                    }
-
-                    message = Encoding.UTF8.GetString(data, 0, receivedResult.Count);
-
-                    var result = JsonUtility.FromJson<SessionData>(message);
-
-                    await HandleSocketReceivedMessageAsync(result);
-                }
-            }
-            catch (WebSocketException ex)
-            {
-                Debug.LogError($"WebSocket error: {ex.Message}");
-                await DisconnectAsync();
+                HandleSocketReceivedMessage(result);
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Unexpected error: {ex.Message}");
-                await DisconnectAsync();
+                Disconnect();
             }
+            yield return null;
         }
 
         private void SendJoinRequest()
         {
             var data = JsonUtility.ToJson(playerJoinInfo);
-            _ = ReadSocketData();
-            _ = SendData(data);
+            StartCoroutine(SendData(data));
         }
 
         public void SendWordFound(WordItem wordItem)
@@ -139,7 +126,7 @@ namespace WordSearchBattleShared.API
             };
 
             var data = JsonUtility.ToJson(sessionData);
-            _ = SendData(data);
+            StartCoroutine(SendData(data));
         }
 
         public void SendGameStart()
@@ -150,10 +137,10 @@ namespace WordSearchBattleShared.API
             };
 
             var data = JsonUtility.ToJson(sessionData);
-            _ = SendData(data);
+            StartCoroutine(SendData(data));
         }
 
-        private async Task HandleSocketReceivedMessageAsync(SessionData message)
+        private void HandleSocketReceivedMessage(SessionData message)
         {
             switch (message.DataType)
             {
@@ -164,7 +151,7 @@ namespace WordSearchBattleShared.API
                 case SocketDataType.End:
                 case SocketDataType.Error:
                     Debug.Log("Game " + message.DataType.ToString() + "ed!");
-                    await DisconnectAsync();
+                    Disconnect();
                     break;
 
                 case SocketDataType.WordCompleted:
