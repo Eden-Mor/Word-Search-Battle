@@ -21,7 +21,6 @@ namespace WordSearchBattleAPI.Database
 
         public async Task RemoveGameSessionChildren(GameSession gameSession, CancellationToken cancellationToken)
         {
-            GameSessions.Remove(gameSession);
             await PlayerGameSessions
                     .Where(x => x.GameSessionId == gameSession.GameSessionId)
                     .ForEachAsync(x => PlayerGameSessions.Remove(x), cancellationToken);
@@ -29,6 +28,8 @@ namespace WordSearchBattleAPI.Database
             await WordList
                     .Where(x => x.GameSessionId == gameSession.GameSessionId)
                     .ForEachAsync(x => WordList.Remove(x), cancellationToken);
+
+            GameSessions.Remove(gameSession);
 
             await SaveChangesAsync(cancellationToken);
         }

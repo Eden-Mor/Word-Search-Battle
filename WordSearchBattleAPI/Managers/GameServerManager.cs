@@ -57,11 +57,21 @@ namespace WordSearchBattleAPI.Managers
             }
         }
 
-        private void RemoveRoom(string roomCode)
+        private async Task RemoveRoom(string roomCode)
         {
             gameSessions[roomCode].Item2.Cancel();
             gameSessions.Remove(roomCode, out _);
             ConsoleLog.WriteLine(string.Format("Room {0} removed.", roomCode));
+
+            using var scope = serviceProvider.CreateScope();
+            GameContext gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
+
+            var session = gameContext.GameSessions.FirstOrDefault(x => x.RoomCode == roomCode);
+            //Log this data, and handle it in the future? see why it wont exist for any reason.
+            if (session == null)
+                return;
+            
+            await gameContext.RemoveGameSessionChildren(session, CancellationToken.None);
         }
     }
 }

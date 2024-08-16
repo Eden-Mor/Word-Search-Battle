@@ -45,6 +45,11 @@ namespace WordSearchBattle.Scripts
             _boardEvents.OnStartGameClicked();
         }
 
+        public void OnFullScreenClicked()
+        {
+            WebGLSupport.WebGLWindow.SwitchFullscreen();
+        }
+
         public void OnLoginClicked()
         {
             _boardEvents.OnLoginToSocketClicked();

@@ -2,9 +2,8 @@
 using System;
 using System.Text;
 using UnityEngine;
-using WebSocketSharp;
+using NativeWebSocket;
 using System.Collections;
-using PimDeWitte.UnityMainThreadDispatcher;
 
 namespace WordSearchBattleShared.API
 {
@@ -18,6 +17,18 @@ namespace WordSearchBattleShared.API
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
         public PlayerJoinInfo playerJoinInfo = new();
+
+        void Update()
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            socket?.DispatchMessageQueue();
+#endif
+        }
+
+        private void OnApplicationQuit()
+        {
+            Disconnect();
+        }
 
         public void ConnectToServer()
         {
@@ -38,24 +49,26 @@ namespace WordSearchBattleShared.API
 
             socket = new(_serverUri.ToString());
 
-            socket.OnMessage += (sender, e) =>
+            socket.OnMessage += (e) =>
             {
                 try
                 {
-                    UnityMainThreadDispatcher.Instance().Enqueue(ReadSocketData(e.Data));
+                    var message = System.Text.Encoding.UTF8.GetString(e);
+                    ReadSocketData(message);
+                    //UnityMainThreadDispatcher.Instance().Enqueue(ReadSocketData(e.Data));
                 }
                 catch (Exception ex)
                 {
-
+                    Debug.LogException(ex);
                 }
             };
 
-            socket.OnOpen += (sender, e) =>
+            socket.OnOpen += () =>
             {
                 Debug.Log("WebSocket connection opened.");
             };
 
-            socket.OnClose += (sender, e) =>
+            socket.OnClose += (e) =>
             {
                 Debug.Log("WebSocket connection closed.");
             };
@@ -67,8 +80,7 @@ namespace WordSearchBattleShared.API
         {
             try
             {
-                if (socket != null && socket.ReadyState == WebSocketState.Open)
-                    socket.CloseAsync(CloseStatusCode.Normal, "Left room.");
+                socket?.Close();
             }
             catch (Exception ex)
             {
@@ -78,14 +90,18 @@ namespace WordSearchBattleShared.API
 
         private IEnumerator SendData(string dataString)
         {
+            if (socket.State == WebSocketState.Connecting)
+                yield return new WaitUntil(() => socket.State != WebSocketState.Connecting);
+            
+
+            if (socket.State != WebSocketState.Open)
+            {
+                Disconnect();
+                yield break;
+            }
+
             try
             {
-                if (socket.ReadyState != WebSocketState.Open)
-                {
-                    Disconnect();
-                    yield break;
-                }
-
                 byte[] data = Encoding.UTF8.GetBytes(dataString);
                 socket.Send(data); //may use async to do an "On complete"
             }
@@ -95,7 +111,7 @@ namespace WordSearchBattleShared.API
             }
         }
 
-        private IEnumerator ReadSocketData(string data)
+        private void ReadSocketData(string data)
         {
             try
             {
@@ -108,7 +124,6 @@ namespace WordSearchBattleShared.API
                 Debug.LogError($"Unexpected error: {ex.Message}");
                 Disconnect();
             }
-            yield return null;
         }
 
         private void SendJoinRequest()

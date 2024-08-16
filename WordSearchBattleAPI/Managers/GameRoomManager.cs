@@ -11,7 +11,7 @@ using System.Drawing;
 
 namespace WordSearchBattleAPI.Managers
 {
-    public class GameRoomManager(PlayerInfo masterPlayerInfo, Action<string> removeRoom, IServiceProvider serviceProvider, CancellationToken cancellationToken)
+    public class GameRoomManager(PlayerInfo masterPlayerInfo, Func<string, Task> removeRoom, IServiceProvider serviceProvider, CancellationToken cancellationToken)
     {
         private readonly ConcurrentDictionary<WebSocket, PlayerInfo> sockets = [];
 
@@ -181,7 +181,7 @@ namespace WordSearchBattleAPI.Managers
             sockets.TryRemove(client, out _);
 
             if (sockets.Count == 0)
-                removeRoom?.Invoke(masterPlayerInfo.RoomCode!);
+                _ = removeRoom?.Invoke(masterPlayerInfo.RoomCode!);
         }
 
 
@@ -248,9 +248,7 @@ namespace WordSearchBattleAPI.Managers
                 gameContext.WordList.Add(completedWord);
                 await gameContext.SaveChangesAsync();
 
-
                 await SendOutWordCompleted(wordItem);
-
             }
             finally
             {

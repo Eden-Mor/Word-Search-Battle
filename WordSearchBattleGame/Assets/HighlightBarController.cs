@@ -68,7 +68,14 @@ public class HighlightBarController : MonoBehaviour
         rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, width * Random.Range(0.95f, 1.05f));
 
         float wordLength = startLetter.Distance(endLetter);
-        float randomRange = Mathf.Lerp(10f, 1f, wordLength / rows); // Adjust the range based on word length, Linear intERPolation
+        var divideByCount = rows;
+        if (isDiagonal)
+            divideByCount = Mathf.Sqrt(2 * Mathf.Pow(rows, 2));
+
+        var maxAngleRand = isDiagonal ? 3f : 5f;
+        var minAngleRand = isDiagonal ? 0f : 2f;
+
+        float randomRange = Mathf.Lerp(maxAngleRand, minAngleRand, wordLength / divideByCount); // Adjust the range based on word length, Linear intERPolation
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + Random.Range(-randomRange, randomRange);
 
         //Since our coordinate system starts 0,0 at the top left corner, we need to adjust the angle on diagonals.
