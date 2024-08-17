@@ -47,9 +47,11 @@ namespace WordSearchBattleAPI.Algorithm
         public void HandleSetupWords(string listSelected, int listSize)
         {
             words = DataHandler.HandleListLoad(listSelected, listSize);
-
-            //return Words;
         }
+
+
+        public static List<string> GetThemes()
+            => DataHandler.GetThemeList();
 
         /*======================================*
         *  3. Handle setup grid size, populate  *

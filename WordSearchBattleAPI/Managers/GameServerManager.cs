@@ -13,6 +13,7 @@ namespace WordSearchBattleAPI.Managers
     {
         private ConcurrentDictionary<string, Tuple<GameRoomManager, CancellationTokenSource>> gameSessions = [];
 
+
         public async Task HandleNewUser(WebSocket webSocket)
         {
             try
@@ -21,7 +22,7 @@ namespace WordSearchBattleAPI.Managers
                 var receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 var stringval = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
 
-                var info = JsonSerializer.Deserialize<PlayerInfo>(stringval);
+                var info = JsonSerializer.Deserialize<JoinRequestInfo>(stringval);
                 ConsoleLog.WriteLine("Player joined: " + info?.PlayerName);
 
                 if (info == null || string.IsNullOrEmpty(info.RoomCode))
@@ -31,10 +32,12 @@ namespace WordSearchBattleAPI.Managers
                     return;
                 }
 
+                info.PlayerName ??= "default";
+
                 //Check if room exists, 
                 if (!gameSessions.ContainsKey(info.RoomCode))
                 {
-                    ConsoleLog.WriteLine("Room created: " + info?.RoomCode);
+                    ConsoleLog.WriteLine("Room created: " + info.RoomCode);
                     
                     using var scope = serviceProvider.CreateScope();
                     GameContext _gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
@@ -48,7 +51,7 @@ namespace WordSearchBattleAPI.Managers
                 }
 
                 ConsoleLog.WriteLine(string.Format("Player {0} joined {1}.", info?.PlayerName, info?.RoomCode));
-                await gameSessions[info.RoomCode].Item1.AddClient(webSocket, info);
+                await gameSessions[info!.RoomCode].Item1.AddClient(webSocket, new PlayerResultInfo() { PlayerName = info.PlayerName });
             }
             catch (Exception ex)
             {
@@ -56,6 +59,7 @@ namespace WordSearchBattleAPI.Managers
                 await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, ex.Message, CancellationToken.None);
             }
         }
+
 
         private async Task RemoveRoom(string roomCode)
         {

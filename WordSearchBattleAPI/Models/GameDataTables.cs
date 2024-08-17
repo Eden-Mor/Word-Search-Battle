@@ -18,7 +18,7 @@ namespace WordSearchBattleAPI.Models
         public GameSessionStatus GameSessionStatusCode { get; set; }
         public string? RoomCode { get; set; }
         public string? LetterGrid { get; set; }
-        public string[]? WordList { get; set; }
+        public List<string>? WordList { get; set; }
 
     }
 

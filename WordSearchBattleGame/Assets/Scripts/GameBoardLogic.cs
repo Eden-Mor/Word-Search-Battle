@@ -138,7 +138,13 @@ public class GameBoardLogic
     {
         //_gameAPI.StartCoroutine(_gameAPI.GetRandomWordSearchCoroutine(SetupGameFromString));
 
-        _gameClient.SendGameStart();
+        GameSettingsItem gameSettingsItem = new()
+        {
+            WordCount = 0,
+            Theme = "test"
+        };
+
+        _gameClient.SendGameStart(gameSettingsItem);
 
         //// It's the next game, let the other player start
         //_gameView.ChangeTurn(_startingPlayer);
@@ -166,14 +172,13 @@ public class GameBoardLogic
         return charArray;
     }
 
-    private void SetupGameFromString(string apires)
+    private void SetupGameFromString(string gameStartInfo)
     {
-        apires = apires.Replace("Item1", "item1").Replace("Item2", "item2");
-        var result = JsonUtility.FromJson<WordSearchBoardModel>(apires);
+        var result = JsonUtility.FromJson<GameStartItem>(gameStartInfo);
 
-        _gameDataObject._wordList = result.item1;
-        _gameDataObject._letterGrid = ConvertToCharArray(result.item2, '|');
-
+        _gameDataObject._wordList = result.WordList;
+        _gameDataObject._letterGrid = ConvertToCharArray(result.LetterGrid, '|');
+        //result.PlayerList
         SetupGame();
     }
 

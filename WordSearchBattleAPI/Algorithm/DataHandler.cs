@@ -8,17 +8,17 @@
 *   d. Return STRING array of randomly chosen Words in list according to user input size    *
 *  2. Return list of all word lists from DataWords.xml                                      *
 *===========================================================================================*/
-using System;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using System.Collections.Generic;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace WordSearchBattleAPI.Algorithm
 {
     public static class DataHandler
     {
+        private const string WORD_LIST_LOCATION = "Resources/DataWords.xml";
+
+
         /*==========================================*
         *  1. Handle get, modify, return word list  *
         *===========================================*/
@@ -32,19 +32,39 @@ namespace WordSearchBattleAPI.Algorithm
 
             return words;
         }
+
+        public static List<string> GetThemeList()
+        {
+            using var xmlStream = new FileStream(WORD_LIST_LOCATION, FileMode.Open);
+
+            XmlDocument doc = new();
+            doc.Load(xmlStream);
+            var nodes = doc.ChildNodes[1]?.ChildNodes;
+
+            if (nodes == null)
+                return [];
+
+            var themes = new List<string>();
+            for (int i = 0; i < nodes.Count; i++)
+                themes.Add(nodes[i]?.Name ?? string.Empty);
+
+            return themes;
+        }
+
+
         private static string LoadListWords(string nameListWords)
         {
-            using var xmlStream = new FileStream("Resources/DataWords.xml", FileMode.Open);
+            using var xmlStream = new FileStream(WORD_LIST_LOCATION, FileMode.Open);
 
-            XmlDocument doc = new XmlDocument();
+            XmlDocument doc = new();
             doc.Load(xmlStream);
 
-            var test = doc.GetElementsByTagName(nameListWords);
+            var elements = doc.GetElementsByTagName(nameListWords);
 
-            if (test.Count <= 0)
+            if (elements.Count <= 0)
                 return string.Empty;
 
-            string? list = test.Item(0)?.InnerText;
+            string? list = elements.Item(0)?.InnerText;
 
             return list ?? string.Empty;
         }

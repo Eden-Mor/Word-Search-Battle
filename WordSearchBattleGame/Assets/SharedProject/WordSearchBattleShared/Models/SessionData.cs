@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using WordSearchBattleShared.Enums;
 
@@ -9,6 +10,21 @@ namespace WordSearchBattleShared.Models
     {
         public SocketDataType DataType;
         public string Data;
+    }
+
+    [Serializable]
+    public struct GameSettingsItem
+    {
+        public int WordCount;
+        public string Theme;
+    }
+
+    [Serializable]
+    public struct GameStartItem
+    {
+        public List<string> WordList;
+        public string LetterGrid;
+        public List<PlayerInfo> PlayerList;
     }
 
     [Serializable]
@@ -23,10 +39,10 @@ namespace WordSearchBattleShared.Models
     }
 
     [Serializable]
-    public struct PlayerJoinInfo
+    public struct ColorPickerItem
     {
-        public string PlayerName;
-        public string RoomCode;
+        public KnownColor? OldColor;
+        public KnownColor NewColor;
     }
 
     [Serializable]
@@ -35,6 +51,28 @@ namespace WordSearchBattleShared.Models
         public bool IsJoined;
         public int PlayerCount;
         public string PlayerName;
+    }
+
+    [Serializable]
+    public struct PlayerInfo
+    {
+        public string PlayerName;
+        public KnownColor ColorEnum;
+    }
+
+    [Serializable]
+    public struct PlayerResultInfo
+    {
+        public string PlayerName;
+        public KnownColor ColorEnum;
+        public int WordsCorrect;
+    }
+
+    [Serializable]
+    public struct JoinRequestInfo
+    {
+        public string PlayerName;
+        public string RoomCode;
     }
 
     public enum SocketDataType

@@ -11,14 +11,30 @@ namespace WordSearchBattleAPI.Models
         public string? Data { get; set; }
     }
 
+    public class GameSettingsItem
+    {
+        public int WordCount { get; set; } = 0;
+        public string Theme { get; set; } = string.Empty;
+
+        public override string ToString()
+            => $"Words: {WordCount}, Theme: {Theme}";
+    }
+
+    public class GameStartItem
+    {
+        public List<string>? WordList { get; set; }
+        public string? LetterGrid { get; set; }
+        public List<PlayerInfo>? PlayerList { get; set; }
+    }
+
     public class WordItem
     {
         public string? Word { get; set; }
         public int StartX { get; set; }
         public int StartY { get; set; }
         public DirectionEnum Direction { get; set; }
-        public KnownColor? Color { get; set; }
         public string? PlayerName { get; set; }
+        public KnownColor? Color { get; set; }
     }
 
     public class ColorPickerItem
@@ -36,10 +52,19 @@ namespace WordSearchBattleAPI.Models
 
     public class PlayerInfo
     {
+        public string PlayerName { get; set; } = string.Empty;
+        public KnownColor ColorEnum { get; set; } = KnownColor.Transparent;
+    }
+
+    public class PlayerResultInfo : PlayerInfo
+    {
         public int WordsCorrect { get; set; } = 0;
+    }
+
+    public class JoinRequestInfo
+    {
         public string? PlayerName { get; set; }
         public string? RoomCode { get; set; }
-        public KnownColor? ColorEnum { get; set; }
     }
 
     public enum SocketDataType

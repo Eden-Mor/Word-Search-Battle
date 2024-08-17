@@ -16,7 +16,7 @@ namespace WordSearchBattleShared.API
         public Action<string> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
-        public PlayerJoinInfo playerJoinInfo = new();
+        public JoinRequestInfo playerJoinInfo = new();
 
         void Update()
         {
@@ -144,11 +144,12 @@ namespace WordSearchBattleShared.API
             StartCoroutine(SendData(data));
         }
 
-        public void SendGameStart()
+        public void SendGameStart(GameSettingsItem gameSettings)
         {
             SessionData sessionData = new()
             {
-                DataType = SocketDataType.Start
+                DataType = SocketDataType.Start,
+                Data = JsonUtility.ToJson(gameSettings)
             };
 
             var data = JsonUtility.ToJson(sessionData);
