@@ -28,7 +28,7 @@ services:
   api:
     restart: always
     container_name: word_search_api
-    image: wordsearchbattle-api:1.98
+    image: wordsearchbattle-api:2.07
     build:
       dockerfile: WordSearchBattleAPI/Dockerfile
       context: .

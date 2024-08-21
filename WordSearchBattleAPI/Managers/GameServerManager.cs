@@ -33,6 +33,7 @@ namespace WordSearchBattleAPI.Managers
                 }
 
                 info.PlayerName ??= "default";
+                var cancelTokenSource = new CancellationTokenSource();
 
                 //Check if room exists, 
                 if (!gameSessions.ContainsKey(info.RoomCode))
@@ -41,17 +42,20 @@ namespace WordSearchBattleAPI.Managers
                     
                     using var scope = serviceProvider.CreateScope();
                     GameContext _gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
+
+                    if (_gameContext.GameSessions.Any(x => x.RoomCode == info.RoomCode))
+                        throw new Exception($"Room '{info.RoomCode}' already exists.");
+
                     _gameContext.GameSessions.Add(new GameSession(GameSessionStatus.WaitingForPlayers, info.RoomCode));
                     await _gameContext.SaveChangesAsync();
 
 
-                    var cancelTokenSource = new CancellationTokenSource();
-                    gameSessions[info.RoomCode] = new(new GameRoomManager(info, RemoveRoom, serviceProvider, cancelTokenSource.Token), cancelTokenSource);
+                    gameSessions[info.RoomCode] = new(new GameRoomManager(info, RemoveRoomAsync, serviceProvider), cancelTokenSource);
                     _ = gameSessions[info.RoomCode].Item1.CleanupSocketsAsync(cancelTokenSource.Token);
                 }
 
                 ConsoleLog.WriteLine(string.Format("Player {0} joined {1}.", info?.PlayerName, info?.RoomCode));
-                await gameSessions[info!.RoomCode].Item1.AddClient(webSocket, new PlayerResultInfo() { PlayerName = info.PlayerName });
+                await gameSessions[info!.RoomCode].Item1.AddClientAsync(webSocket, new PlayerResultInfo() { PlayerName = info.PlayerName }, cancelTokenSource.Token);
             }
             catch (Exception ex)
             {
@@ -61,7 +65,7 @@ namespace WordSearchBattleAPI.Managers
         }
 
 
-        private async Task RemoveRoom(string roomCode)
+        private async Task RemoveRoomAsync(string roomCode, CancellationToken token)
         {
             gameSessions[roomCode].Item2.Cancel();
             gameSessions.Remove(roomCode, out _);
@@ -75,7 +79,7 @@ namespace WordSearchBattleAPI.Managers
             if (session == null)
                 return;
             
-            await gameContext.RemoveGameSessionChildren(session, CancellationToken.None);
+            await gameContext.RemoveGameSessionChildren(session, token);
         }
     }
 }

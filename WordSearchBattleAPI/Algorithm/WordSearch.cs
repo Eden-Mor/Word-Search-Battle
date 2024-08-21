@@ -84,7 +84,8 @@ namespace WordSearchBattleAPI.Algorithm
             int totalElementsGridSquare = (int)Math.Sqrt(totalElementsGrid);
 
             // increase current number of Grid elements until reaches next root of square (e.g. 5, 6, 7)
-            while (Math.Sqrt(sizeMinGrid) != totalElementsGridSquare + 1)
+            //EM FIXED - When there were TWO words that were really long, this was looping until sizeMinGrid reached int.Max.
+            while (Math.Sqrt(sizeMinGrid) <= totalElementsGridSquare + 1)
             {
                 sizeMinGrid++;
             }

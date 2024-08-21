@@ -9,6 +9,9 @@ namespace WordSearchBattleAPI.Models
     {
         public SocketDataType DataType { get; set; }
         public string? Data { get; set; }
+
+        public override string ToString()
+            => $"DataType: {DataType}, Data: {Data}";
     }
 
     public class GameSettingsItem
@@ -25,6 +28,11 @@ namespace WordSearchBattleAPI.Models
         public List<string>? WordList { get; set; }
         public string? LetterGrid { get; set; }
         public List<PlayerInfo>? PlayerList { get; set; }
+    }
+
+    public class EndDataItem(List<PlayerResultInfo> playerResultInfos)
+    {
+        public List<PlayerResultInfo> PlayerResultList { get; set; } = playerResultInfos;
     }
 
     public class WordItem

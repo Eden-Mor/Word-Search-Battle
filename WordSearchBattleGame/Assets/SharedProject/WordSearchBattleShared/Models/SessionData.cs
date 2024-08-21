@@ -68,6 +68,11 @@ namespace WordSearchBattleShared.Models
         public int WordsCorrect;
     }
 
+    public struct EndData
+    {
+        public List<PlayerResultInfo> PlayerResultList;
+    }
+
     [Serializable]
     public struct JoinRequestInfo
     {

@@ -19,19 +19,32 @@ namespace WordSearchBattleAPI.Database
         public DbSet<WordListItem> WordList { get; set; }
 
 
+        public async Task DeletePlayerGameSessionAsync(GameSession gameSession, CancellationToken cancellationToken)
+        {
+            var playerGameSessions = PlayerGameSessions.Where(x => x.GameSessionId == gameSession.GameSessionId);
+            PlayerGameSessions.RemoveRange(playerGameSessions);
+            await SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task DeleteWordDataAsync(GameSession gameSession, CancellationToken cancellationToken)
+        {
+            var wordListEntries = WordList.Where(x => x.GameSessionId == gameSession.GameSessionId);
+            WordList.RemoveRange(wordListEntries);
+            await SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task DeleteGameSessionAsync(GameSession gameSession, CancellationToken cancellationToken)
+        {
+            GameSessions.Remove(gameSession);
+            await SaveChangesAsync(cancellationToken);
+        }
+
+
         public async Task RemoveGameSessionChildren(GameSession gameSession, CancellationToken cancellationToken)
         {
-            await PlayerGameSessions
-                    .Where(x => x.GameSessionId == gameSession.GameSessionId)
-                    .ForEachAsync(x => PlayerGameSessions.Remove(x), cancellationToken);
-
-            await WordList
-                    .Where(x => x.GameSessionId == gameSession.GameSessionId)
-                    .ForEachAsync(x => WordList.Remove(x), cancellationToken);
-
-            GameSessions.Remove(gameSession);
-
-            await SaveChangesAsync(cancellationToken);
+            await DeletePlayerGameSessionAsync(gameSession, cancellationToken);
+            await DeleteWordDataAsync(gameSession, cancellationToken);
+            await DeleteGameSessionAsync(gameSession, cancellationToken);
         }
     }
 }

@@ -4,15 +4,16 @@ using System.Text;
 using UnityEngine;
 using NativeWebSocket;
 using System.Collections;
+using System.Linq;
 
 namespace WordSearchBattleShared.API
 {
     public class GameClient : MonoBehaviour
     {
         private WebSocket socket;
-        private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
-        //private readonly Uri _serverUri = new("ws://194.164.203.182:2943/ws");
-        //private readonly Uri _serverUri = new("wss://localhost:7232/ws");
+        //private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
+        //private readonly Uri _serverUri = new("ws://194.164.203.182:2943/ws"); // Does not work on published game, only localhost
+        private readonly Uri _serverUri = new("wss://localhost:7232/ws");
         public Action<string> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
@@ -161,39 +162,58 @@ namespace WordSearchBattleShared.API
             switch (message.DataType)
             {
                 case SocketDataType.Start:
-                    ReceiveGameStart(message);
+                    ReceiveGameStart(message.Data);
                     break;
 
                 case SocketDataType.End:
+                    GameComplete(message.Data);
+                    break;
+
                 case SocketDataType.Error:
-                    Debug.Log("Game " + message.DataType.ToString() + "ed!");
+                    Debug.Log("Game Errored!");
                     Disconnect();
                     break;
 
                 case SocketDataType.WordCompleted:
-                    ReceivedWordCompleted(message);
+                    ReceivedWordCompleted(message.Data);
                     break;
 
                 case SocketDataType.PlayerJoined:
-                    ReceivedPlayerJoined(message);
+                    ReceivedPlayerJoined(message.Data);
                     break;
             }
         }
 
-        private void ReceiveGameStart(SessionData message)
+        private void GameComplete(string data)
         {
-            OnGameStart?.Invoke(message.Data);
+            //https://discussions.unity.com/t/how-to-deserialize-json-data-into-list/185912/2
+
+            var result = JsonUtility.FromJson<EndData>(data);
+            var mostWordCount = result.PlayerResultList.Max(x => x.WordsCorrect);
+            var players = result.PlayerResultList.Where(x => x.WordsCorrect == mostWordCount);
+
+            var winText = "won!";
+            if (players.Count() > 1)
+                winText = "tied!";
+
+            foreach (var player in players)
+                Debug.Log(player.PlayerName + " got " + mostWordCount + " words correct and " + winText);
         }
 
-        private void ReceivedWordCompleted(SessionData message)
+        private void ReceiveGameStart(string data)
         {
-            var result = JsonUtility.FromJson<WordItem>(message.Data);
+            OnGameStart?.Invoke(data);
+        }
+
+        private void ReceivedWordCompleted(string data)
+        {
+            var result = JsonUtility.FromJson<WordItem>(data);
             OnWordComplete?.Invoke(result);
         }
 
-        private void ReceivedPlayerJoined(SessionData message)
+        private void ReceivedPlayerJoined(string data)
         {
-            var result = JsonUtility.FromJson<PlayerJoinedInfo>(message.Data);
+            var result = JsonUtility.FromJson<PlayerJoinedInfo>(data);
             OnPlayerJoined?.Invoke(result);
         }
     }
