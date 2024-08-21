@@ -15,8 +15,9 @@ namespace WordSearchBattleAPI.Managers
     public class GameRoomManager(JoinRequestInfo masterPlayerInfo, Func<string, CancellationToken, Task> removeRoomAsync, IServiceProvider serviceProvider)
     {
         private readonly ConcurrentDictionary<WebSocket, PlayerResultInfo> sockets = [];
-        private SemaphoreSlim _pickColorSemaphor = new(1, 1);
-        private SemaphoreSlim _wordCompleteSemaphor = new(1, 1);
+        private SemaphoreSlim pickColorSemaphor = new(1, 1);
+        private SemaphoreSlim wordCompleteSemaphor = new(1, 1);
+        private CancellationTokenSource gameFinishedCancellationTokenSource = new();
 
         #region Startup
 
@@ -221,7 +222,7 @@ namespace WordSearchBattleAPI.Managers
 
         private async Task PickedColorAsync(string? data, PlayerResultInfo playerInfo, CancellationToken token)
         {
-            await _pickColorSemaphor.WaitAsync(token);
+            await pickColorSemaphor.WaitAsync(token);
             try
             {
                 if (data == null || !int.TryParse(data, out var knownColorInt))
@@ -241,7 +242,7 @@ namespace WordSearchBattleAPI.Managers
             }
             finally
             {
-                _pickColorSemaphor.Release();
+                pickColorSemaphor.Release();
             }
         }
 
@@ -252,7 +253,7 @@ namespace WordSearchBattleAPI.Managers
 
         private async Task WordCompleteAsync(string? data, PlayerResultInfo playerInfo, CancellationToken token)
         {
-            await _wordCompleteSemaphor.WaitAsync(token);
+            await wordCompleteSemaphor.WaitAsync(token);
             try
             {
                 var wordItem = JsonSerializer.Deserialize<WordItem>(data ?? string.Empty);
@@ -304,11 +305,11 @@ namespace WordSearchBattleAPI.Managers
 
                 //Wait three seconds to allow players to select any dupes if any
                 if (gameSession.WordList?.Count == distinctWordCount)
-                    _ = WaitAndCallbackAsync(3000, GameFinishedAsync, token);
+                    _ = WaitAndCallbackAsync(3000, GameFinishedAsync, gameFinishedCancellationTokenSource.Token);
             }
             finally
             {
-                _wordCompleteSemaphor.Release();
+                wordCompleteSemaphor.Release();
             }
         }
 
@@ -333,7 +334,7 @@ namespace WordSearchBattleAPI.Managers
             await gameContext.SaveChangesAsync(token);
 
             //Incase they continue to replay in the room, just delete the word data.
-            //If the token was canceled we are deleting the entire room, so instead of calling this twice, just cancel this one and let the roomDelete handle deleting the words
+            //We can use token here since we delete the word list when we start the room and or the room gets destroyed
             await gameContext.DeleteWordDataAsync(gameSession, token);
 
             await SendOutGameCompletedAsync(token);
@@ -352,6 +353,20 @@ namespace WordSearchBattleAPI.Managers
 
         private async Task StartRequestedAsync(string? data, PlayerResultInfo playerInfo, CancellationToken token)
         {
+            //if the game was about to be finished, cancel sending out the finished request.
+            gameFinishedCancellationTokenSource.Cancel();
+            gameFinishedCancellationTokenSource = new();
+
+            using var scope = serviceProvider.CreateScope();
+            var gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
+
+            var gameSession = gameContext.GameSessions.FirstOrDefault(x => x.RoomCode == masterPlayerInfo.RoomCode);
+            if (gameSession == null)
+                return;
+
+            //Delete word data if game is a rerun
+            await gameContext.DeleteWordDataAsync(gameSession, token);
+
             if (masterPlayerInfo.PlayerName != playerInfo.PlayerName)
                 return;
 
