@@ -21,6 +21,10 @@ namespace WordSearchBattleAPI.Managers
 
         #region Startup
 
+        public void Initialize(CancellationToken token)
+        {
+            _ = CleanupSocketsAsync(token);
+        }
 
         public async Task CleanupSocketsAsync(CancellationToken token)
         {
@@ -218,7 +222,6 @@ namespace WordSearchBattleAPI.Managers
                     break;
             }
         }
-
 
         private async Task PickedColorAsync(string? data, PlayerResultInfo playerInfo, CancellationToken token)
         {
@@ -432,7 +435,7 @@ namespace WordSearchBattleAPI.Managers
                     gameSettings.Theme = themes[Random.Shared.Next(themes.Count)];
 
                 if (gameSettings.WordCount <= 0)
-                    gameSettings.WordCount = 2;
+                    gameSettings.WordCount = 10;
 
                 WordSearch wordSearch = new();
                 wordSearch.HandleSetupWords(gameSettings.Theme, gameSettings.WordCount);

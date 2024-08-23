@@ -9,7 +9,7 @@ using System.Collections.Concurrent;
 
 namespace WordSearchBattleAPI.Managers
 {
-    public class GameServerManager(IServiceProvider serviceProvider)
+    public class GameServerManager(IServiceProvider serviceProvider) 
     {
         private ConcurrentDictionary<string, Tuple<GameRoomManager, CancellationTokenSource>> gameSessions = [];
 
@@ -51,7 +51,7 @@ namespace WordSearchBattleAPI.Managers
 
 
                     gameSessions[info.RoomCode] = new(new GameRoomManager(info, RemoveRoomAsync, serviceProvider), cancelTokenSource);
-                    _ = gameSessions[info.RoomCode].Item1.CleanupSocketsAsync(cancelTokenSource.Token);
+                    gameSessions[info.RoomCode].Item1.Initialize(cancelTokenSource.Token);
                 }
 
                 ConsoleLog.WriteLine(string.Format("Player {0} joined {1}.", info?.PlayerName, info?.RoomCode));
