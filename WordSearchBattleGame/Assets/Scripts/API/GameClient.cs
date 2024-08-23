@@ -11,9 +11,9 @@ namespace WordSearchBattleShared.API
     public class GameClient : MonoBehaviour
     {
         private WebSocket socket;
-        //private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
+        private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
         //private readonly Uri _serverUri = new("ws://194.164.203.182:2943/ws"); // Does not work on published game, only localhost
-        private readonly Uri _serverUri = new("wss://localhost:7232/ws");
+        //private readonly Uri _serverUri = new("wss://localhost:7232/ws");
         public Action<string> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
