@@ -16,7 +16,7 @@ public class HighlightBarController : MonoBehaviour
     private Image image;
 
 
-    public void Setup(IPosition startLetter, IPosition endLetter, Color color, float opacity, float width, float rows)
+    public void Setup(IPosition startLetter, IPosition endLetter, Color color, float opacity, float rows)
     {
         Vector2 direction = new Vector2(endLetter.X, endLetter.Y) - new Vector2(startLetter.X, startLetter.Y);
         var isVert = startLetter.IsVert(endLetter);
@@ -62,6 +62,7 @@ public class HighlightBarController : MonoBehaviour
         );
 
         float length = anchorSize.magnitude;
+        float width = (1 / rows) * 900f;
 
         // Set position, size, and rotation
         rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, length);
@@ -72,8 +73,8 @@ public class HighlightBarController : MonoBehaviour
         if (isDiagonal)
             divideByCount = Mathf.Sqrt(2 * Mathf.Pow(rows, 2));
 
-        var maxAngleRand = isDiagonal ? 3f : 5f;
-        var minAngleRand = isDiagonal ? 0f : 2f;
+        var maxAngleRand = isDiagonal ? 3f : 4f;
+        var minAngleRand = isDiagonal ? 0f : 1f;
 
         float randomRange = Mathf.Lerp(maxAngleRand, minAngleRand, wordLength / divideByCount); // Adjust the range based on word length, Linear intERPolation
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + Random.Range(-randomRange, randomRange);

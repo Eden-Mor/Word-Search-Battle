@@ -69,7 +69,6 @@ public class GameBoardLogic
         _highlightManager.CreateHighlightBar(start,
                                              end,
                                              size: _gridManager.rows,
-                                             60f,
                                              new Color(color.R / 255f, color.G / 255f, color.B / 255f));
     }
 
@@ -97,7 +96,6 @@ public class GameBoardLogic
             _highlightManager.CreateHighlightBar(start,
                                                  end,
                                                  size: _gridManager.rows,
-                                                 60f,
                                                  Color.green);
         }
 

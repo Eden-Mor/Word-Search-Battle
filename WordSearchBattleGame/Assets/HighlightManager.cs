@@ -18,7 +18,7 @@ public class HighlightManager : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    public void CreateHighlightBar(IPosition startLetter, IPosition endLetter, float size, float width = 20f, Color? color = null, float opacity = 0.3f)
+    public void CreateHighlightBar(IPosition startLetter, IPosition endLetter, float size, Color? color = null, float opacity = 0.3f)
     {
         if (color == null)
             color = Color.yellow;
@@ -34,6 +34,6 @@ public class HighlightManager : MonoBehaviour
             endLetter = temp;
         }
 
-        controller.Setup(startLetter, endLetter, (Color)color, opacity, width, size);
+        controller.Setup(startLetter, endLetter, (Color)color, opacity, size);
     }
 }
