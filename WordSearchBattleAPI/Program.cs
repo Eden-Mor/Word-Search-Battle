@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.HttpOverrides;
 using WordSearchBattleAPI.Database;
 using WordSearchBattleAPI.Services;
 using Microsoft.IdentityModel.Tokens;
@@ -6,8 +5,6 @@ using System.Text;
 using WordSearchBattleAPI.Helper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using WordSearchBattleAPI.Managers;
-using Microsoft.Extensions.Logging.Configuration;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -51,10 +48,9 @@ builder.Services.AddSingleton<GameServerManager>();
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options => options.TimestampFormat = "[HH:mm:ss] ");
 
-
 var app = builder.Build();
 
-app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(2) });
+app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromSeconds(30) });
 
 var gameServerManager = app.Services.GetRequiredService<GameServerManager>();
 
