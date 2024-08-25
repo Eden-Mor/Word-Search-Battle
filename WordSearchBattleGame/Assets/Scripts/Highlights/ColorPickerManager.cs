@@ -43,8 +43,6 @@ namespace WordSearchBattle.Scripts
 
         private void SetupColorList()
         {
-            
-
             foreach (var color in colors)
                 CreateColorChoice(color);
         }
