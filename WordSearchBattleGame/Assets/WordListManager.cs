@@ -34,24 +34,16 @@ public class WordListManager : MonoBehaviour
 
     public void MarkWordCompleted(string word, string playerName)
     {
-        // Find the index of the word in the list
         int index = wordList.IndexOf(word);
 
         if (index != -1)
         {
-            //// Remove the word from the list
-            //wordList.RemoveAt(index);
-
-            // Destroy the corresponding GameObject
             var gameObject = rectTrans.GetChild(index).gameObject;
 
             var tmp = gameObject.GetComponent<TextMeshPro>();
 
             tmp.color = Color.black;
             tmp.text = "(" + playerName + ") " + tmp.text;
-
-            //// Re-populate the list to update the UI (optional, but ensures correct order)
-            //PopulateList(wordList);
         }
     }
 
