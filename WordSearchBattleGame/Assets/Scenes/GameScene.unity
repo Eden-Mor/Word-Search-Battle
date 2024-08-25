@@ -2474,7 +2474,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2805,6 +2805,7 @@ MonoBehaviour:
   _GameClient: {fileID: 18687697}
   _highlightManager: {fileID: 984595897}
   _colorPickerManager: {fileID: 1458019031}
+  _debugLogIn: {fileID: 843519584}
 --- !u!1 &1735684039
 GameObject:
   m_ObjectHideFlags: 0
