@@ -55,9 +55,9 @@ namespace WordSearchBattleAPI.Managers
         private void RemoveClient(WebSocket client)
         {
             var userInfo = usersDictionary[client];
-            _ = SendOutPlayerLeftAsync(userInfo, CancellationToken.None);
-
             usersDictionary.TryRemove(client, out _);
+            
+            _ = SendOutPlayerLeftAsync(userInfo, CancellationToken.None);
 
             if (!usersDictionary.IsEmpty)
                 return;
