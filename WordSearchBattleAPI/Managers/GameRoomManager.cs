@@ -56,14 +56,18 @@ namespace WordSearchBattleAPI.Managers
         {
             var userInfo = usersDictionary[client];
             usersDictionary.TryRemove(client, out _);
-            
-            _ = SendOutPlayerLeftAsync(userInfo, CancellationToken.None);
 
-            if (!usersDictionary.IsEmpty)
+            if (usersDictionary.IsEmpty)
+            {
+                //We do not want this to get cancelled
+                _ = removeRoomAsync?.Invoke(masterPlayerInfo.RoomCode!, CancellationToken.None);
                 return;
+            }
 
-            //We do not want this to get cancelled
-            _ = removeRoomAsync?.Invoke(masterPlayerInfo.RoomCode!, CancellationToken.None);
+            if (userInfo.PlayerName == masterPlayerInfo.PlayerName)
+                masterPlayerInfo.PlayerName = usersDictionary.FirstOrDefault().Value.PlayerName;
+
+            _ = SendOutPlayerLeftAsync(userInfo, CancellationToken.None);
         }
 
 
