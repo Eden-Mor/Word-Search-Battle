@@ -12,7 +12,6 @@ namespace WordSearchBattle.Scripts
     public class ColorPickerManager : MonoBehaviour
     {
         public GameObject colorChoicePrefab;
-        private Transform parentGameObject;
 
         public UnityEvent<KnownColor> onColorPicked;
         
@@ -40,8 +39,6 @@ namespace WordSearchBattle.Scripts
         void Start()
         {
             SetupColorList();
-            parentGameObject = transform.parent.GetComponent<Transform>();
-            parentGameObject.gameObject.SetActive(false);
         }
 
         private void SetupColorList()
@@ -89,7 +86,7 @@ namespace WordSearchBattle.Scripts
         }
 
         public void ShowHideMenu(bool show)
-            => parentGameObject.gameObject.SetActive(show);
+            => transform.parent.GetComponent<Transform>().gameObject.SetActive(show);
 
         internal void ClearColors()
         {
