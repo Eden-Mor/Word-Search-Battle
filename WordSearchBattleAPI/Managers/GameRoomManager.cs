@@ -206,8 +206,8 @@ namespace WordSearchBattleAPI.Managers
             var session = gameContext.GameSessions.FirstOrDefault(x => x.RoomCode == masterPlayerInfo.RoomCode) ?? throw new Exception("Session does not exist, how did we get here?.");
 
 
-
-            if (session.GameSessionStatusCode == GameSessionStatus.Completed && result.DataType != SocketDataType.Start)
+            //Block "word complete" request when the game is already over.
+            if (session.GameSessionStatusCode == GameSessionStatus.Completed && result.DataType == SocketDataType.WordCompleted)
             {
                 ConsoleLog.WriteLine($"Request was denied. Room {masterPlayerInfo.RoomCode}, Session Status {session.GameSessionStatusCode}, Request type {result.DataType}.");
                 return;
