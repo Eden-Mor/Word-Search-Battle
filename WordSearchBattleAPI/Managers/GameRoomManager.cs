@@ -444,6 +444,10 @@ namespace WordSearchBattleAPI.Managers
                 if (gameSettings.WordCount <= 0)
                     gameSettings.WordCount = 10;
 
+#if DEBUG
+                gameSettings.WordCount = 2;
+#endif
+
                 WordSearch wordSearch = new();
                 wordSearch.HandleSetupWords(gameSettings.Theme, gameSettings.WordCount);
                 wordSearch.HandleSetupGrid();
