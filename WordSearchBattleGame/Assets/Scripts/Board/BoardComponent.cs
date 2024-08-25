@@ -1,6 +1,7 @@
 using Assets.Scripts.API;
 using Assets.Scripts.Board;
 using Assets.Scripts.GameData;
+using System.Drawing;
 using UnityEngine;
 using WordSearchBattleShared.API;
 
@@ -15,7 +16,8 @@ namespace WordSearchBattle.Scripts
         [SerializeField] private GridManager _gridManager;
         [SerializeField] private WordListManager _wordListManager;
         [SerializeField] private GameClient _GameClient;
-        [SerializeField] private HighlightManager _HighlightManager;
+        [SerializeField] private HighlightManager _highlightManager;
+        [SerializeField] private ColorPickerManager _colorPickerManager;
 
         private GameBoardLogic _gameBoardLogic;
 
@@ -31,7 +33,7 @@ namespace WordSearchBattle.Scripts
         public void Awake()
         {
             _boardView.Initialize();
-            _gameBoardLogic = new GameBoardLogic(_boardView, _boardEvents, _gameAPI, _gameData, _gridManager, _wordListManager, _GameClient, _HighlightManager);
+            _gameBoardLogic = new GameBoardLogic(_boardView, _boardEvents, _gameAPI, _gameData, _gridManager, _wordListManager, _GameClient, _highlightManager, _colorPickerManager);
             _gameBoardLogic.Initialize();
         }
 
@@ -53,6 +55,11 @@ namespace WordSearchBattle.Scripts
         public void OnLoginClicked()
         {
             _boardEvents.OnLoginToSocketClicked();
+        }
+
+        public void OnColorClicked(KnownColor color)
+        {
+            _boardEvents.OnColorPicked(color);
         }
     }
 }

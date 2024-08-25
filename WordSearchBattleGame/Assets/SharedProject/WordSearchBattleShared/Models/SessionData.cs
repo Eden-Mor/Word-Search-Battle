@@ -34,14 +34,15 @@ namespace WordSearchBattleShared.Models
         public int StartX;
         public int StartY;
         public DirectionEnum Direction;
-        public string PlayerName;
+        public int PlayerId;
         public KnownColor Color;
     }
 
     [Serializable]
     public struct ColorPickerItem
     {
-        public KnownColor? OldColor;
+        public int PlayerId;
+        public KnownColor OldColor;
         public KnownColor NewColor;
     }
 
@@ -51,11 +52,13 @@ namespace WordSearchBattleShared.Models
         public bool IsJoined;
         public int PlayerCount;
         public string PlayerName;
+        public int PlayerId;
     }
 
     [Serializable]
     public struct PlayerInfo
     {
+        public int PlayerId;
         public string PlayerName;
         public KnownColor ColorEnum;
     }
@@ -66,6 +69,7 @@ namespace WordSearchBattleShared.Models
         public string PlayerName;
         public KnownColor ColorEnum;
         public int WordsCorrect;
+        public int PlayerId;
     }
 
     public struct EndData
@@ -87,5 +91,7 @@ namespace WordSearchBattleShared.Models
         End = 2,
         WordCompleted = 3,
         PlayerJoined = 4,
+        ColorChanged = 5,
+        PlayerDetails = 6
     }
 }

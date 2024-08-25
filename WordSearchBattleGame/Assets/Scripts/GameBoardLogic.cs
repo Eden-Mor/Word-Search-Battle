@@ -8,6 +8,10 @@ using System.Text;
 using WordSearchBattleShared.Models;
 using WordSearchBattleShared.API;
 using WordSearchBattleShared.Helpers;
+using Assets.Helpers;
+using System;
+using System.Drawing;
+using System.Linq;
 
 
 public class GameBoardLogic
@@ -20,6 +24,7 @@ public class GameBoardLogic
     private WordListManager _wordListManager;
     private GameClient _gameClient;
     private HighlightManager _highlightManager;
+    private ColorPickerManager _colorPickerManager;
 
     public GameBoardLogic(GameView gameView,
                           UserActionEvents userActionEvents,
@@ -28,7 +33,8 @@ public class GameBoardLogic
                           GridManager gridManager,
                           WordListManager wordListManager,
                           GameClient _GameClient,
-                          HighlightManager highlightManager)
+                          HighlightManager highlightManager,
+                          ColorPickerManager colorPickerManager)
     {
         _gameView = gameView;
         _userActionEvents = userActionEvents;
@@ -38,6 +44,7 @@ public class GameBoardLogic
         _wordListManager = wordListManager;
         _gameClient = _GameClient;
         _highlightManager = highlightManager;
+        _colorPickerManager = colorPickerManager;
     }
 
 
@@ -46,30 +53,50 @@ public class GameBoardLogic
         // Subscribe to user action events
         _userActionEvents.StartGameClicked += UserActionEvents_StartGameClicked;
         _userActionEvents.LoginToSocketClicked += UserActionEvents_LoginClicked;
+        _userActionEvents.ColorPicked += UserActionEvents_ColorPicked;
 
         _gridManager.OnWordSelect = CheckWordResult;
+
         _gameClient.OnGameStart = SetupGameFromString;
         _gameClient.OnPlayerJoined = OnPlayerJoined;
         _gameClient.OnWordComplete = MarkWord;
+        _gameClient.OnColorPicked = ColorPicked;
+        _gameClient.OnGameComplete = GameComplete;
     }
 
+    private void GameComplete()
+    {
+        ShowHideColorMenu(true);
+    }
+
+    private void ColorPicked(ColorPickerItem item)
+    {
+        var isSelf = item.PlayerId == _gameClient.PlayerDetails.PlayerId;
+        _colorPickerManager.ColorChosen(item.NewColor, isSelf);
+        if (item.OldColor != KnownColor.Transparent)
+            _colorPickerManager.ColorUnChosen(item.OldColor);
+    }
+
+    private void ShowHideColorMenu(bool show)
+        => _colorPickerManager.ShowHideMenu(show);
+
+    private void UserActionEvents_ColorPicked(KnownColor color) 
+        => _gameClient.SendColorPickRequest(color);
 
     private void MarkWord(WordItem item)
     {
-        _wordListManager.MarkWordCompleted(item.Word, item.PlayerName);
+        var player = _gameDataObject._playerList.First(x => x.PlayerId == item.PlayerId);
+        _wordListManager.MarkWordCompleted(item.Word, player.PlayerName);
         Position start = new() { X = item.StartX, Y = item.StartY };
 
         var length = item.Word.Length - 1;
-
         var end = PositionHelper.GetEndPosition(start, length, item.Direction);
 
-        var color = System.Drawing.Color.FromKnownColor((System.Drawing.KnownColor)item.Color);
-
-
+        var color = System.Drawing.Color.FromKnownColor(item.Color);
         _highlightManager.CreateHighlightBar(start,
                                              end,
                                              size: _gridManager.rows,
-                                             new Color(color.R / 255f, color.G / 255f, color.B / 255f));
+                                             color.ToUnityColor());
     }
 
 
@@ -96,15 +123,15 @@ public class GameBoardLogic
             _highlightManager.CreateHighlightBar(start,
                                                  end,
                                                  size: _gridManager.rows,
-                                                 Color.green);
+                                                 System.Drawing.Color.Green.ToUnityColor());
         }
 
 
         if (!_gameDataObject._wordList.Contains(value.Word))
             return;
 
-        value.PlayerName = _gameClient.playerJoinInfo.PlayerName;
 
+        value.PlayerId = _gameClient.PlayerDetails.PlayerId;
         _gameClient.SendWordFound(value);
     }
 
@@ -117,10 +144,8 @@ public class GameBoardLogic
         _highlightManager.ResetHighlights();
 
         var size = (int)Mathf.Sqrt(_gameDataObject._letterGrid.Length);
-
         _gridManager.columns = size;
         _gridManager.rows = size;
-
         _gridManager.CreateGrid();
 
         _wordListManager.PopulateList(_gameDataObject._wordList);
@@ -170,13 +195,14 @@ public class GameBoardLogic
         return charArray;
     }
 
-    private void SetupGameFromString(string gameStartInfo)
+    private void SetupGameFromString(GameStartItem gameStartInfo)
     {
-        var result = JsonUtility.FromJson<GameStartItem>(gameStartInfo);
+        ShowHideColorMenu(false);
 
-        _gameDataObject._wordList = result.WordList;
-        _gameDataObject._letterGrid = ConvertToCharArray(result.LetterGrid, '|');
-        //result.PlayerList
+        _gameDataObject._wordList = gameStartInfo.WordList;
+        _gameDataObject._letterGrid = ConvertToCharArray(gameStartInfo.LetterGrid, '|');
+        _gameDataObject._playerList = gameStartInfo.PlayerList;
+
         SetupGame();
     }
 

@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Text;
 using WordSearchBattleShared.Enums;
 
 namespace WordSearchBattleAPI.Models
@@ -41,14 +42,15 @@ namespace WordSearchBattleAPI.Models
         public int StartX { get; set; }
         public int StartY { get; set; }
         public DirectionEnum Direction { get; set; }
-        public string? PlayerName { get; set; }
+        public int PlayerId { get; set; }
         public KnownColor? Color { get; set; }
     }
 
     public class ColorPickerItem
     {
-        public KnownColor? OldColor { get; set; }
+        public KnownColor OldColor { get; set; }
         public KnownColor NewColor { get; set; }
+        public int PlayerId { get; set; }
     }
 
     public class PlayerJoinedInfo
@@ -56,12 +58,23 @@ namespace WordSearchBattleAPI.Models
         public bool IsJoined { get; set; }
         public int PlayerCount { get; set; }
         public string? PlayerName { get; set; }
+        public int PlayerId { get; set; }
     }
 
     public class PlayerInfo
     {
+        public int PlayerId { get; set; }
         public string PlayerName { get; set; } = string.Empty;
         public KnownColor ColorEnum { get; set; } = KnownColor.Transparent;
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"Player Id: {PlayerId}");
+            sb.AppendLine($"Player Name: {PlayerName}");
+            sb.AppendLine($"Color: {ColorEnum}");
+            return sb.ToString();
+        }
     }
 
     public class PlayerResultInfo : PlayerInfo
@@ -82,6 +95,7 @@ namespace WordSearchBattleAPI.Models
         End = 2,
         WordCompleted = 3,
         PlayerJoined = 4,
-        ColorChanged = 5
+        ColorChanged = 5,
+        PlayerDetails = 6
     }
 }

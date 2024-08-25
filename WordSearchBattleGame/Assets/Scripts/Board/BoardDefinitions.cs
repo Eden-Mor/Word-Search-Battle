@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 
 namespace WordSearchBattle.Scripts
 {
@@ -6,6 +7,7 @@ namespace WordSearchBattle.Scripts
     {
         public abstract event Action LoginToSocketClicked;
         public abstract event Action StartGameClicked;
+        public abstract event Action<KnownColor> ColorPicked;
     }
 
     public abstract class GameView

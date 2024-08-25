@@ -5,6 +5,8 @@ using UnityEngine;
 using NativeWebSocket;
 using System.Collections;
 using System.Linq;
+using System.Drawing;
+using Assets.Helpers;
 
 namespace WordSearchBattleShared.API
 {
@@ -12,12 +14,14 @@ namespace WordSearchBattleShared.API
     {
         private WebSocket socket;
         private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
-        //private readonly Uri _serverUri = new("ws://194.164.203.182:2943/ws"); // Does not work on published game, only localhost
         //private readonly Uri _serverUri = new("wss://localhost:7232/ws");
-        public Action<string> OnGameStart;
+        public Action<GameStartItem> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
+        public Action<ColorPickerItem> OnColorPicked; 
+        public Action OnGameComplete;
         public JoinRequestInfo playerJoinInfo = new();
+        public PlayerInfo PlayerDetails = new();
 
         void Update()
         {
@@ -47,7 +51,6 @@ namespace WordSearchBattleShared.API
 
         private void SetUpSocket()
         {
-
             socket = new(_serverUri.ToString());
 
             socket.OnMessage += (e) =>
@@ -66,12 +69,10 @@ namespace WordSearchBattleShared.API
 
             socket.OnOpen += () =>
             {
-                Debug.Log("WebSocket connection opened.");
             };
 
             socket.OnClose += (e) =>
             {
-                Debug.Log("WebSocket connection closed.");
             };
 
             socket.Connect();
@@ -133,6 +134,18 @@ namespace WordSearchBattleShared.API
             StartCoroutine(SendData(data));
         }
 
+        public void SendColorPickRequest(KnownColor color)
+        {
+            SessionData sessionData = new()
+            {
+                DataType = SocketDataType.ColorChanged,
+                Data = color.ToIntString()
+            };
+
+            var data = JsonUtility.ToJson(sessionData);
+            StartCoroutine(SendData(data));
+        }
+
         public void SendWordFound(WordItem wordItem)
         {
             SessionData sessionData = new()
@@ -166,7 +179,7 @@ namespace WordSearchBattleShared.API
                     break;
 
                 case SocketDataType.End:
-                    GameComplete(message.Data);
+                    ReceivedGameComplete(message.Data);
                     break;
 
                 case SocketDataType.Error:
@@ -181,10 +194,18 @@ namespace WordSearchBattleShared.API
                 case SocketDataType.PlayerJoined:
                     ReceivedPlayerJoined(message.Data);
                     break;
+
+                case SocketDataType.ColorChanged:
+                    ReceivedColorChanged(message.Data);
+                    break;
+
+                case SocketDataType.PlayerDetails:
+                    ReceivedPlayerDetails(message.Data);
+                    break;
             }
         }
 
-        private void GameComplete(string data)
+        private void ReceivedGameComplete(string data)
         {
             //https://discussions.unity.com/t/how-to-deserialize-json-data-into-list/185912/2
 
@@ -198,24 +219,24 @@ namespace WordSearchBattleShared.API
 
             foreach (var player in players)
                 Debug.Log(player.PlayerName + " got " + mostWordCount + " words correct and " + winText);
+
+            OnGameComplete?.Invoke();
         }
+
+        private void ReceivedPlayerDetails(string data)
+            => this.PlayerDetails = JsonUtility.FromJson<PlayerInfo>(data);
+
+        private void ReceivedColorChanged(string data)
+            => OnColorPicked?.Invoke(JsonUtility.FromJson<ColorPickerItem>(data));
 
         private void ReceiveGameStart(string data)
-        {
-            OnGameStart?.Invoke(data);
-        }
+            => OnGameStart?.Invoke(JsonUtility.FromJson<GameStartItem>(data));
 
         private void ReceivedWordCompleted(string data)
-        {
-            var result = JsonUtility.FromJson<WordItem>(data);
-            OnWordComplete?.Invoke(result);
-        }
+            => OnWordComplete?.Invoke(JsonUtility.FromJson<WordItem>(data));
 
         private void ReceivedPlayerJoined(string data)
-        {
-            var result = JsonUtility.FromJson<PlayerJoinedInfo>(data);
-            OnPlayerJoined?.Invoke(result);
-        }
+            => OnPlayerJoined?.Invoke(JsonUtility.FromJson<PlayerJoinedInfo>(data));
     }
 
 }

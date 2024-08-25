@@ -14,7 +14,7 @@ namespace WordSearchBattleAPI.Managers
 {
     public class GameRoomManager(JoinRequestInfo masterPlayerInfo, Func<string, CancellationToken, Task> removeRoomAsync, IServiceProvider serviceProvider)
     {
-        private readonly ConcurrentDictionary<WebSocket, PlayerResultInfo> sockets = [];
+        private readonly ConcurrentDictionary<WebSocket, PlayerResultInfo> usersDictionary = [];
         private SemaphoreSlim pickColorSemaphor = new(1, 1);
         private SemaphoreSlim wordCompleteSemaphor = new(1, 1);
         private CancellationTokenSource gameFinishedCancellationTokenSource = new();
@@ -40,7 +40,7 @@ namespace WordSearchBattleAPI.Managers
 
         private void CheckAndRemoveClients(bool forceClose, CancellationToken token)
         {
-            foreach (var socket in sockets.Keys)
+            foreach (var socket in usersDictionary.Keys)
             {
                 if (token.IsCancellationRequested)
                     return;
@@ -53,9 +53,9 @@ namespace WordSearchBattleAPI.Managers
 
         private void RemoveClient(WebSocket client)
         {
-            sockets.TryRemove(client, out _);
+            usersDictionary.TryRemove(client, out _);
 
-            if (!sockets.IsEmpty)
+            if (!usersDictionary.IsEmpty)
                 return;
 
             //We do not want this to get cancelled
@@ -71,7 +71,7 @@ namespace WordSearchBattleAPI.Managers
             while (socket.State == WebSocketState.Connecting)
                 await Task.Delay(100, token);
 
-            if (!sockets.TryAdd(socket, info))
+            if (!usersDictionary.TryAdd(socket, info))
             {
                 ConsoleLog.WriteLine($"Socket was not added to game session {masterPlayerInfo.RoomCode}.");
                 return;
@@ -80,9 +80,9 @@ namespace WordSearchBattleAPI.Managers
             ConsoleLog.WriteLine($"Socket added to game session {masterPlayerInfo.RoomCode}.");
 
             await SendPlayerJoinedDataAsync(info, token);
+            await SendPlayerDetails(info, socket, token);
             await ReadStreamRecursivelyAsync(socket, info, token);
         }
-
 
         private void FindAndReplacePlayerName(PlayerResultInfo info)
         {
@@ -92,14 +92,14 @@ namespace WordSearchBattleAPI.Managers
             {
                 if (dupCount == 0)
                 {
-                    if (sockets.Any(x => x.Value.PlayerName == info.PlayerName))
+                    if (usersDictionary.Any(x => x.Value.PlayerName == info.PlayerName))
                         FindAndReplacePlayerName(info, dupCount + 1);
                     else
                         return;
                 }
                 else
                 {
-                    if (sockets.Any(x => x.Value.PlayerName == info.PlayerName + " " + dupCount))
+                    if (usersDictionary.Any(x => x.Value.PlayerName == info.PlayerName + " " + dupCount))
                         FindAndReplacePlayerName(info, dupCount + 1);
                     else
                         info.PlayerName += " " + (dupCount + 1);
@@ -109,7 +109,13 @@ namespace WordSearchBattleAPI.Managers
         #endregion
 
         #region Socket Read/Write
-        private async Task SendDataToClientsAsync(SocketDataType dataType, object dataToSend, CancellationToken token)
+        private async Task SendDataToUserAsync(SocketDataType dataType, object dataToSend, WebSocket socket, CancellationToken token)
+            => await SendDataToSocketsAsync(dataType, dataToSend, [socket], token);
+
+        private async Task SendDataToUsersAsync(SocketDataType dataType, object dataToSend, CancellationToken token)
+            => await SendDataToSocketsAsync(dataType, dataToSend, usersDictionary.Select(x => x.Key), token);
+
+        private async Task SendDataToSocketsAsync(SocketDataType dataType, object dataToSend, IEnumerable<WebSocket> sockets, CancellationToken token)
         {
             SessionData sessionData = new()
             {
@@ -120,9 +126,8 @@ namespace WordSearchBattleAPI.Managers
             byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(sessionData));
             List<WebSocket> clientsToRemove = [];
 
-            foreach (var socketItem in sockets)
+            foreach (var socket in sockets)
             {
-                var socket = socketItem.Key;
                 try
                 {
                     //State is never 'Connecting' here, we previously await for it to be open.
@@ -223,6 +228,21 @@ namespace WordSearchBattleAPI.Managers
             }
         }
 
+
+
+        //Send the player collection to show counts of word completed and winner.
+        private async Task SendOutGameCompletedAsync(CancellationToken token)
+            => await SendDataToUsersAsync(SocketDataType.End, new EndDataItem([.. usersDictionary.Values]), token);
+
+        private async Task SendOutWordCompletedAsync(WordItem data, CancellationToken token)
+            => await SendDataToUsersAsync(SocketDataType.WordCompleted, data, token);
+
+        private async Task SendPlayerDetails(PlayerInfo info, WebSocket socket, CancellationToken token)
+            => await SendDataToUserAsync(SocketDataType.PlayerDetails, info, socket, token);
+
+        private async Task SendOutColorChangedAsync(ColorPickerItem data, CancellationToken token)
+            => await SendDataToUsersAsync(SocketDataType.ColorChanged, data, token);
+
         private async Task PickedColorAsync(string? data, PlayerResultInfo playerInfo, CancellationToken token)
         {
             await pickColorSemaphor.WaitAsync(token);
@@ -235,23 +255,19 @@ namespace WordSearchBattleAPI.Managers
                 if (!Enum.IsDefined(typeof(KnownColor), colorEnum))
                     return;
 
-                if (sockets.Any(x => x.Value.ColorEnum == colorEnum))
+                if (usersDictionary.Any(x => x.Value.ColorEnum == colorEnum))
                     return;
 
                 var currentColor = playerInfo.ColorEnum;
                 playerInfo.ColorEnum = colorEnum;
 
-                await SendOutColorChangedAsync(new ColorPickerItem() { OldColor = currentColor, NewColor = colorEnum }, token);
+                await SendOutColorChangedAsync(new ColorPickerItem() { OldColor = currentColor, NewColor = colorEnum, PlayerId = playerInfo.PlayerId }, token);
             }
             finally
             {
                 pickColorSemaphor.Release();
             }
         }
-
-
-        private async Task SendOutColorChangedAsync(ColorPickerItem data, CancellationToken token)
-            => await SendDataToClientsAsync(SocketDataType.ColorChanged, data, token);
 
 
         private async Task WordCompleteAsync(string? data, PlayerResultInfo playerInfo, CancellationToken token)
@@ -278,10 +294,10 @@ namespace WordSearchBattleAPI.Managers
                 if (wordLocationWasFound)
                     return;
 
-                ConsoleLog.WriteLine($"Word '{wordItem.Word}' completed by user {wordItem.PlayerName}.");
+                ConsoleLog.WriteLine($"Word '{wordItem.Word}' completed by user {wordItem.PlayerId}.");
 
                 playerInfo.WordsCorrect++;
-                wordItem.PlayerName = playerInfo.PlayerName;
+                wordItem.PlayerId = playerInfo.PlayerId;
                 wordItem.Color = playerInfo.ColorEnum;
 
                 //This is where you would check if the wordLocationWasFound is actually on the grid in that specific location (or above this method).
@@ -344,16 +360,6 @@ namespace WordSearchBattleAPI.Managers
         }
 
 
-
-        //Send the player collection to show counts of word completed and winner.
-        private async Task SendOutGameCompletedAsync(CancellationToken token)
-            => await SendDataToClientsAsync(SocketDataType.End, new EndDataItem([.. sockets.Values]), token);
-
-
-        private async Task SendOutWordCompletedAsync(WordItem data, CancellationToken token)
-            => await SendDataToClientsAsync(SocketDataType.WordCompleted, data, token);
-
-
         private async Task StartRequestedAsync(string? data, PlayerResultInfo playerInfo, CancellationToken token)
         {
             //if the game was about to be finished, cancel sending out the finished request.
@@ -388,24 +394,25 @@ namespace WordSearchBattleAPI.Managers
             PlayerJoinedInfo playerJoinedInfo = new()
             {
                 IsJoined = true,
-                PlayerCount = sockets.Count,
+                PlayerCount = usersDictionary.Count,
                 PlayerName = client.PlayerName,
+                PlayerId = client.PlayerId,
             };
 
-            await SendDataToClientsAsync(SocketDataType.PlayerJoined, playerJoinedInfo, token);
+            await SendDataToUsersAsync(SocketDataType.PlayerJoined, playerJoinedInfo, token);
         }
 
 
         private void AssignRandomPlayerColors()
         {
-            var playersWithNoColor = sockets.Where(x => x.Value.ColorEnum == KnownColor.Transparent).ToList();
+            var playersWithNoColor = usersDictionary.Where(x => x.Value.ColorEnum == KnownColor.Transparent).ToList();
 
             foreach (var player in playersWithNoColor)
             {
                 while (true)
                 {
                     var randomColor = Random.Shared.Next((int)KnownColor.AliceBlue, (int)KnownColor.RebeccaPurple);
-                    if (sockets.Any(x => x.Value.ColorEnum != KnownColor.Transparent && (int)x.Value.ColorEnum == randomColor))
+                    if (usersDictionary.Any(x => x.Value.ColorEnum != KnownColor.Transparent && (int)x.Value.ColorEnum == randomColor))
                         continue;
 
                     player.Value.ColorEnum = (KnownColor)randomColor;
@@ -450,14 +457,14 @@ namespace WordSearchBattleAPI.Managers
                 {
                     WordList = gameSession.WordList,
                     LetterGrid = gameSession.LetterGrid,
-                    PlayerList = sockets.Select(x => (PlayerInfo)x.Value).ToList(),
+                    PlayerList = usersDictionary.Select(x => (PlayerInfo)x.Value).ToList(),
                 };
 
                 gameSession.GameSessionStatusCode = GameSessionStatus.InProgress;
 
                 await gameContext.SaveChangesAsync(token);
 
-                await SendDataToClientsAsync(SocketDataType.Start, gameData, token);
+                await SendDataToUsersAsync(SocketDataType.Start, gameData, token);
 
                 ConsoleLog.WriteLine($"Game session {masterPlayerInfo.RoomCode} started for all players.");
             }
@@ -469,7 +476,7 @@ namespace WordSearchBattleAPI.Managers
 
         private void ClearPlayerWordCounts()
         {
-            foreach (var player in sockets.Values)
+            foreach (var player in usersDictionary.Values)
                 player.WordsCorrect = 0;
         }
     }
