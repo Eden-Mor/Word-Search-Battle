@@ -206,12 +206,12 @@ public class GameBoardLogic
         SetupGame();
     }
 
-    private void UserActionEvents_LoginClicked()
+    private void UserActionEvents_LoginClicked(bool local)
     {
         _gameClient.playerJoinInfo.RoomCode = _gameDataObject._roomCode;
         _gameClient.playerJoinInfo.PlayerName = string.IsNullOrEmpty(_gameDataObject._playerName) ? "default" : _gameDataObject._playerName;
 
-        _gameClient.ConnectToServer();
+        _gameClient.ConnectToServer(local);
     }
 
 }

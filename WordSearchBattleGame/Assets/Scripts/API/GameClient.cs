@@ -14,7 +14,7 @@ namespace WordSearchBattleShared.API
     {
         private WebSocket socket;
         private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
-        //private readonly Uri _serverUri = new("wss://localhost:7232/ws");
+        private readonly Uri _localServerUri = new("wss://localhost:7232/ws");
         public Action<GameStartItem> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
@@ -35,12 +35,12 @@ namespace WordSearchBattleShared.API
             Disconnect();
         }
 
-        public void ConnectToServer()
+        public void ConnectToServer(bool local = false)
         {
             try
             {
                 Disconnect();
-                SetUpSocket();
+                SetUpSocket(local);
                 SendJoinRequest();
             }
             catch (Exception ex)
@@ -49,9 +49,9 @@ namespace WordSearchBattleShared.API
             }
         }
 
-        private void SetUpSocket()
+        private void SetUpSocket(bool local)
         {
-            socket = new(_serverUri.ToString());
+            socket = new((local ? _localServerUri : _serverUri).ToString());
 
             socket.OnMessage += (e) =>
             {
