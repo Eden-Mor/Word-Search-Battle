@@ -18,6 +18,7 @@ namespace WordSearchBattleAPI.Managers
         private SemaphoreSlim pickColorSemaphor = new(1, 1);
         private SemaphoreSlim wordCompleteSemaphor = new(1, 1);
         private CancellationTokenSource gameFinishedCancellationTokenSource = new();
+        private int playerIdCounter = 0;
 
         #region Startup
 
@@ -65,6 +66,8 @@ namespace WordSearchBattleAPI.Managers
 
         public async Task AddClientAsync(WebSocket socket, PlayerResultInfo info, CancellationToken token)
         {
+            info.PlayerId = GetNextPlayerId();
+
             FindAndReplacePlayerName(info);
 
             //Wait until we are fully connected before sending data to prevent race conditions
@@ -107,6 +110,12 @@ namespace WordSearchBattleAPI.Managers
             }
         }
         #endregion
+
+        public int GetNextPlayerId()
+        {
+            playerIdCounter++;
+            return playerIdCounter - 1;
+        }
 
         #region Socket Read/Write
         private async Task SendDataToUserAsync(SocketDataType dataType, object dataToSend, WebSocket socket, CancellationToken token)
