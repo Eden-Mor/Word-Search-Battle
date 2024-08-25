@@ -18,21 +18,21 @@ namespace WordSearchBattle.Scripts
         private KnownColor[] colors = new KnownColor[]
             {
                 KnownColor.White,
-                KnownColor.Red,
-                KnownColor.Green,
-                KnownColor.Blue,
-                KnownColor.Yellow,
-                KnownColor.Cyan,
-                KnownColor.Magenta,
-                KnownColor.Orange,
-                KnownColor.Purple,
-                KnownColor.Gray,
                 KnownColor.Pink,
-                KnownColor.Teal,
-                KnownColor.Navy,
+                KnownColor.Gray,
                 KnownColor.Olive,
+                KnownColor.Lime,
+                KnownColor.Green,
+                KnownColor.Yellow,
+                KnownColor.Orange,
+                KnownColor.Red,
                 KnownColor.Maroon,
-                KnownColor.Lime
+                KnownColor.Purple,
+                KnownColor.Magenta,
+                KnownColor.Navy,
+                KnownColor.Blue,
+                KnownColor.Cyan,
+                KnownColor.Teal,
             };
 
 
