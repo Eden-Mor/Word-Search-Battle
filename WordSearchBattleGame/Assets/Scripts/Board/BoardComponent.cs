@@ -42,11 +42,6 @@ namespace WordSearchBattle.Scripts
             _gameBoardLogic.Initialize();
         }
 
-        private void OnDestroy()
-        {
-            _gameBoardLogic.DeInitialize();
-        }
-
         public void OnStartGameClicked()
         {
             _boardEvents.OnStartGameClicked();

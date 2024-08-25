@@ -1,7 +1,6 @@
 using UnityEngine;
 using WordSearchBattle.Scripts;
 using Assets.Scripts.API;
-using System.Collections.Generic;
 using Assets.Scripts.GameData;
 using Assets.Scripts.Board;
 using System.Text;
@@ -9,13 +8,13 @@ using WordSearchBattleShared.Models;
 using WordSearchBattleShared.API;
 using WordSearchBattleShared.Helpers;
 using Assets.Helpers;
-using System;
 using System.Drawing;
 using System.Linq;
 
 
 public class GameBoardLogic
 {
+    #region Constructor
     private GameView _gameView;
     private UserActionEvents _userActionEvents;
     private GameApiService _gameAPI;
@@ -47,6 +46,7 @@ public class GameBoardLogic
         _colorPickerManager = colorPickerManager;
     }
 
+#endregion
 
     public void Initialize()
     {
@@ -59,29 +59,30 @@ public class GameBoardLogic
 
         _gameClient.OnGameStart = SetupGameFromString;
         _gameClient.OnPlayerJoined = OnPlayerJoined;
+        _gameClient.OnPlayerLeft = PlayerLeft;
         _gameClient.OnWordComplete = MarkWord;
         _gameClient.OnColorPicked = ColorPicked;
         _gameClient.OnGameComplete = GameComplete;
+        _gameClient.OnSocketOpen = () => ShowHideColorMenu(true);
+        _gameClient.OnSocketClose = () => ShowHideColorMenu(false);
     }
 
     private void GameComplete()
-    {
-        ShowHideColorMenu(true);
-    }
+        => ShowHideColorMenu(true);
+
+    private void ShowHideColorMenu(bool show)
+        => _colorPickerManager.ShowHideMenu(show);
+
+    private void UserActionEvents_ColorPicked(KnownColor color)
+        => _gameClient.SendColorPickRequest(color);
+
 
     private void ColorPicked(ColorPickerItem item)
     {
         var isSelf = item.PlayerId == _gameClient.PlayerDetails.PlayerId;
         _colorPickerManager.ColorChosen(item.NewColor, isSelf);
-        if (item.OldColor != KnownColor.Transparent)
-            _colorPickerManager.ColorUnChosen(item.OldColor);
+        _colorPickerManager.ColorUnChosen(item.OldColor);
     }
-
-    private void ShowHideColorMenu(bool show)
-        => _colorPickerManager.ShowHideMenu(show);
-
-    private void UserActionEvents_ColorPicked(KnownColor color) 
-        => _gameClient.SendColorPickRequest(color);
 
     private void MarkWord(WordItem item)
     {
@@ -103,33 +104,27 @@ public class GameBoardLogic
     private void OnPlayerJoined(PlayerJoinedInfo info)
     {
         StringBuilder sb = new();
-        sb.Append(info.PlayerName + " ");
-        sb.Append(info.IsJoined ? "Joined" : "Left");
+        sb.Append(info.PlayerName + " Joined");
         sb.Append(" Count: " + info.PlayerCount);
         _gameView.AddPlayerJoinedText(sb.ToString());
     }
 
+    private void PlayerLeft(PlayerInfo info)
+    {
+        _gameView.AddPlayerJoinedText(info.PlayerName + " Left");
+        _colorPickerManager.ColorUnChosen(info.ColorEnum);
+    }
 
     private void CheckWordResult(WordItem value)
     {
-        if (false) //DEBUG HIGHLIGHTS
-        {
-            Position start = new() { X = value.StartX, Y = value.StartY };
-
-            var length = value.Word.Length - 1;
-
-            var end = PositionHelper.GetEndPosition(start, length, value.Direction);
-
-            _highlightManager.CreateHighlightBar(start,
-                                                 end,
-                                                 size: _gridManager.rows,
-                                                 System.Drawing.Color.Green.ToUnityColor());
-        }
-
+        //Uncomment to show debug green highlights.
+        //Position start = new() { X = value.StartX, Y = value.StartY };
+        //var length = value.Word.Length - 1;
+        //var end = PositionHelper.GetEndPosition(start, length, value.Direction);
+        //_highlightManager.CreateHighlightBar(start, end, size: _gridManager.rows, System.Drawing.Color.Green.ToUnityColor());
 
         if (!_gameDataObject._wordList.Contains(value.Word))
             return;
-
 
         value.PlayerId = _gameClient.PlayerDetails.PlayerId;
         _gameClient.SendWordFound(value);
@@ -138,6 +133,8 @@ public class GameBoardLogic
 
     private void SetupGame()
     {
+        ShowHideColorMenu(false);
+
         if (_gameDataObject._wordList.Count <= 0)
             return;
 
@@ -151,16 +148,8 @@ public class GameBoardLogic
         _wordListManager.PopulateList(_gameDataObject._wordList);
     }
 
-    public void DeInitialize()
-    {
-        _gameView = null;
-        _userActionEvents = null;
-    }
-
     private void UserActionEvents_StartGameClicked()
     {
-        //_gameAPI.StartCoroutine(_gameAPI.GetRandomWordSearchCoroutine(SetupGameFromString));
-
         GameSettingsItem gameSettingsItem = new()
         {
             WordCount = 0,
@@ -168,39 +157,12 @@ public class GameBoardLogic
         };
 
         _gameClient.SendGameStart(gameSettingsItem);
-
-        //// It's the next game, let the other player start
-        //_gameView.ChangeTurn(_startingPlayer);
-        //_currentPlayer = _startingPlayer;
-
-        //_gameView.StartGame(_startingPlayer);
-
-        //// Reset the game state
-        //_isGameOver = false;
-    }
-
-
-    public static char[,] ConvertToCharArray(string input, char separator)
-    {
-        var sections = input.Split(separator);
-        int numRows = sections.Length;
-        int numCols = sections[0].Length;
-
-        char[,] charArray = new char[numRows, numCols];
-
-        for (int i = 0; i < numRows; i++)
-            for (int j = 0; j < numCols; j++)
-                charArray[i, j] = sections[i][j];
-
-        return charArray;
     }
 
     private void SetupGameFromString(GameStartItem gameStartInfo)
     {
-        ShowHideColorMenu(false);
-
         _gameDataObject._wordList = gameStartInfo.WordList;
-        _gameDataObject._letterGrid = ConvertToCharArray(gameStartInfo.LetterGrid, '|');
+        _gameDataObject._letterGrid = GridArrayHelper.ConvertToCharArray(gameStartInfo.LetterGrid, '|');
         _gameDataObject._playerList = gameStartInfo.PlayerList;
 
         SetupGame();

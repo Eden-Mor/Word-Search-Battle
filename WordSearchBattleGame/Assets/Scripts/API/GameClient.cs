@@ -19,9 +19,13 @@ namespace WordSearchBattleShared.API
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
         public Action<ColorPickerItem> OnColorPicked; 
+        public Action<PlayerInfo> OnPlayerLeft;
         public Action OnGameComplete;
+        public Action OnSocketOpen;
+        public Action OnSocketClose;
         public JoinRequestInfo playerJoinInfo = new();
         public PlayerInfo PlayerDetails = new();
+
 
         void Update()
         {
@@ -67,13 +71,9 @@ namespace WordSearchBattleShared.API
                 }
             };
 
-            socket.OnOpen += () =>
-            {
-            };
+            socket.OnOpen += () => OnSocketOpen?.Invoke();
 
-            socket.OnClose += (e) =>
-            {
-            };
+            socket.OnClose += (closeCode) => OnSocketClose?.Invoke();
 
             socket.Connect();
         }
@@ -202,9 +202,12 @@ namespace WordSearchBattleShared.API
                 case SocketDataType.PlayerDetails:
                     ReceivedPlayerDetails(message.Data);
                     break;
+
+                case SocketDataType.PlayerLeft:
+                    ReceivedPlayerLeft(message.Data);
+                    break;
             }
         }
-
         private void ReceivedGameComplete(string data)
         {
             //https://discussions.unity.com/t/how-to-deserialize-json-data-into-list/185912/2
@@ -237,6 +240,10 @@ namespace WordSearchBattleShared.API
 
         private void ReceivedPlayerJoined(string data)
             => OnPlayerJoined?.Invoke(JsonUtility.FromJson<PlayerJoinedInfo>(data));
+
+        private void ReceivedPlayerLeft(string data)
+            => OnPlayerLeft?.Invoke(JsonUtility.FromJson<PlayerInfo>(data));
+
     }
 
 }

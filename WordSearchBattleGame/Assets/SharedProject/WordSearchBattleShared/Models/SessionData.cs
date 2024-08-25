@@ -49,7 +49,6 @@ namespace WordSearchBattleShared.Models
     [Serializable]
     public struct PlayerJoinedInfo
     {
-        public bool IsJoined;
         public int PlayerCount;
         public string PlayerName;
         public int PlayerId;
@@ -92,6 +91,7 @@ namespace WordSearchBattleShared.Models
         WordCompleted = 3,
         PlayerJoined = 4,
         ColorChanged = 5,
-        PlayerDetails = 6
+        PlayerDetails = 6,
+        PlayerLeft = 7
     }
 }

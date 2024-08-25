@@ -68,6 +68,9 @@ namespace WordSearchBattle.Scripts
 
         public void ColorChosen(KnownColor color, bool self)
         {
+            if (color == KnownColor.Transparent)
+                return;
+
             var gameObject = transform.Find(color.ToIntString());
             var pickerController = gameObject.GetComponent<ColorPickerController>();
 
@@ -76,6 +79,9 @@ namespace WordSearchBattle.Scripts
 
         public void ColorUnChosen(KnownColor color)
         {
+            if (color == KnownColor.Transparent)
+                return;
+
             var gameObject = transform.Find(color.ToIntString());
             var pickerController = gameObject.GetComponent<ColorPickerController>();
 

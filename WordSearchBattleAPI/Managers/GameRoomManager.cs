@@ -54,6 +54,9 @@ namespace WordSearchBattleAPI.Managers
 
         private void RemoveClient(WebSocket client)
         {
+            var userInfo = usersDictionary[client];
+            _ = SendOutPlayerLeftAsync(userInfo, CancellationToken.None);
+
             usersDictionary.TryRemove(client, out _);
 
             if (!usersDictionary.IsEmpty)
@@ -252,6 +255,9 @@ namespace WordSearchBattleAPI.Managers
         private async Task SendOutColorChangedAsync(ColorPickerItem data, CancellationToken token)
             => await SendDataToUsersAsync(SocketDataType.ColorChanged, data, token);
 
+        private async Task SendOutPlayerLeftAsync(PlayerInfo data, CancellationToken token)
+            => await SendDataToUsersAsync(SocketDataType.PlayerLeft, data, token);
+
         private async Task PickedColorAsync(string? data, PlayerResultInfo playerInfo, CancellationToken token)
         {
             await pickColorSemaphor.WaitAsync(token);
@@ -402,7 +408,6 @@ namespace WordSearchBattleAPI.Managers
         {
             PlayerJoinedInfo playerJoinedInfo = new()
             {
-                IsJoined = true,
                 PlayerCount = usersDictionary.Count,
                 PlayerName = client.PlayerName,
                 PlayerId = client.PlayerId,

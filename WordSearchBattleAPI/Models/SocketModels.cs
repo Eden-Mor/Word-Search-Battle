@@ -55,7 +55,6 @@ namespace WordSearchBattleAPI.Models
 
     public class PlayerJoinedInfo
     {
-        public bool IsJoined { get; set; }
         public int PlayerCount { get; set; }
         public string? PlayerName { get; set; }
         public int PlayerId { get; set; }
@@ -96,6 +95,7 @@ namespace WordSearchBattleAPI.Models
         WordCompleted = 3,
         PlayerJoined = 4,
         ColorChanged = 5,
-        PlayerDetails = 6
+        PlayerDetails = 6,
+        PlayerLeft = 7
     }
 }
