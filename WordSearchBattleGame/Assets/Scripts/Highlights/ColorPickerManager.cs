@@ -15,21 +15,8 @@ namespace WordSearchBattle.Scripts
         private Transform parentGameObject;
 
         public UnityEvent<KnownColor> onColorPicked;
-
-        void Start()
-        {
-            SetupColorList();
-        }
-
-        private void Awake()
-        {
-            parentGameObject = transform.parent.GetComponent<Transform>();
-            parentGameObject.gameObject.SetActive(false);
-        }
-
-        private void SetupColorList()
-        {
-            KnownColor[] colors = new KnownColor[]
+        
+        private KnownColor[] colors = new KnownColor[]
             {
                 KnownColor.White,
                 KnownColor.Red,
@@ -48,6 +35,22 @@ namespace WordSearchBattle.Scripts
                 KnownColor.Maroon,
                 KnownColor.Lime
             };
+
+
+        void Start()
+        {
+            SetupColorList();
+        }
+
+        private void Awake()
+        {
+            parentGameObject = transform.parent.GetComponent<Transform>();
+            parentGameObject.gameObject.SetActive(false);
+        }
+
+        private void SetupColorList()
+        {
+            
 
             foreach (var color in colors)
                 CreateColorChoice(color);
@@ -92,5 +95,10 @@ namespace WordSearchBattle.Scripts
         public void ShowHideMenu(bool show)
             => parentGameObject.gameObject.SetActive(show);
 
+        internal void ClearColors()
+        {
+            foreach (var color in colors)
+                ColorUnChosen(color);
+        }
     }
 }

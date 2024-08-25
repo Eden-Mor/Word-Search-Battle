@@ -64,7 +64,13 @@ public class GameBoardLogic
         _gameClient.OnColorPicked = ColorPicked;
         _gameClient.OnGameComplete = GameComplete;
         _gameClient.OnSocketOpen = () => ShowHideColorMenu(true);
-        _gameClient.OnSocketClose = () => ShowHideColorMenu(false);
+        _gameClient.OnSocketClose = OnSocketClosed; 
+    }
+
+    private void OnSocketClosed()
+    {
+        ShowHideColorMenu(false);
+        _colorPickerManager.ClearColors();
     }
 
     private void GameComplete()
