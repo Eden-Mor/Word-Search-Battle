@@ -24,6 +24,7 @@ namespace WordSearchBattle.Scripts
         private void Awake()
         {
             parentGameObject = transform.parent.GetComponent<Transform>();
+            parentGameObject.gameObject.SetActive(false);
         }
 
         private void SetupColorList()
