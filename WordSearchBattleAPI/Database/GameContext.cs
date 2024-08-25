@@ -40,7 +40,7 @@ namespace WordSearchBattleAPI.Database
         }
 
 
-        public async Task RemoveGameSessionChildren(GameSession gameSession, CancellationToken cancellationToken)
+        public async Task RemoveGameSessionChildrenAsync(GameSession gameSession, CancellationToken cancellationToken)
         {
             await DeletePlayerGameSessionAsync(gameSession, cancellationToken);
             await DeleteWordDataAsync(gameSession, cancellationToken);

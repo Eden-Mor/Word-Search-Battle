@@ -43,12 +43,12 @@ namespace WordSearchBattleAPI.Managers
                     using var scope = serviceProvider.CreateScope();
                     GameContext _gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
 
+                    //Room exists in database but not in dictionary, old room was not removed properly, remove it here.
                     if (_gameContext.GameSessions.Any(x => x.RoomCode == info.RoomCode))
-                        throw new Exception($"Room '{info.RoomCode}' already exists.");
+                        await _gameContext.RemoveGameSessionChildrenAsync(_gameContext.GameSessions.First(x => x.RoomCode == info.RoomCode), CancellationToken.None);
 
                     _gameContext.GameSessions.Add(new GameSession(GameSessionStatus.WaitingForPlayers, info.RoomCode));
                     await _gameContext.SaveChangesAsync();
-
 
                     gameSessions[info.RoomCode] = new(new GameRoomManager(info, RemoveRoomAsync, serviceProvider), cancelTokenSource);
                     gameSessions[info.RoomCode].Item1.Initialize(cancelTokenSource.Token);
@@ -79,7 +79,7 @@ namespace WordSearchBattleAPI.Managers
             if (session == null)
                 return;
             
-            await gameContext.RemoveGameSessionChildren(session, token);
+            await gameContext.RemoveGameSessionChildrenAsync(session, token);
         }
     }
 }
