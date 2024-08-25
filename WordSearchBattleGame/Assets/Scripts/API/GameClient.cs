@@ -71,9 +71,29 @@ namespace WordSearchBattleShared.API
                 }
             };
 
-            socket.OnOpen += () => OnSocketOpen?.Invoke();
+            socket.OnOpen += () =>
+            {
+                try
+                {
+                    OnSocketOpen?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                } 
+            };
 
-            socket.OnClose += (closeCode) => OnSocketClose?.Invoke();
+            socket.OnClose += (closeCode) =>
+            {
+                try
+                {
+                    OnSocketClose?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            };
 
             socket.Connect();
         }

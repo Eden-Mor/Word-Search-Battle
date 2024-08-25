@@ -40,10 +40,6 @@ namespace WordSearchBattle.Scripts
         void Start()
         {
             SetupColorList();
-        }
-
-        private void Awake()
-        {
             parentGameObject = transform.parent.GetComponent<Transform>();
             parentGameObject.gameObject.SetActive(false);
         }
