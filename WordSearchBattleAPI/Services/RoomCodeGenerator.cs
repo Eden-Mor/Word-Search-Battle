@@ -3,18 +3,21 @@ using WordSearchBattleAPI.Database;
 
 namespace WordSearchBattleAPI.Services
 {
-    public class RoomCodeGeneratorService(GameContext context) : IRoomCodeGenerator
+    public class RoomCodeGeneratorService(IServiceProvider serviceProvider) : IRoomCodeGenerator
     {
         private static readonly Random Random = new();
-        private const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        private const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         public async Task<string> GenerateUniqueCodeAsync(CancellationToken cancellationToken)
         {
+            using var scope = serviceProvider.CreateScope();
+            GameContext gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
+
             string code;
             do
             {
                 code = GenerateCode();
-            } while (await CodeExistsAsync(code, cancellationToken));
+            } while (await DoesCodeExistAsync(code, gameContext, cancellationToken));
 
             return code;
         }
@@ -24,8 +27,8 @@ namespace WordSearchBattleAPI.Services
                             .Select(s => s[Random.Next(s.Length)])
                             .ToArray());
 
-        private async Task<bool> CodeExistsAsync(string code, CancellationToken cancellationToken)
-            => await context.GameSessions.AnyAsync(e => e.RoomCode == code, cancellationToken);
+        private async Task<bool> DoesCodeExistAsync(string code, GameContext gameContext, CancellationToken cancellationToken)
+            => await gameContext.GameSessions.AnyAsync(e => e.RoomCode == code, cancellationToken);
     }
 
     public interface IRoomCodeGenerator

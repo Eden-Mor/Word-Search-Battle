@@ -60,6 +60,7 @@ namespace WordSearchBattleShared.Models
         public int PlayerId;
         public string PlayerName;
         public KnownColor ColorEnum;
+        public string RoomCode;
     }
 
     [Serializable]

@@ -51,7 +51,6 @@ public class GameBoardLogic
     public void Initialize()
     {
         // Subscribe to user action events
-        _userActionEvents.StartGameClicked += UserActionEvents_StartGameClicked;
         _userActionEvents.LoginToSocketClicked += UserActionEvents_LoginClicked;
         _userActionEvents.ColorPicked += UserActionEvents_ColorPicked;
 
@@ -62,22 +61,14 @@ public class GameBoardLogic
         _gameClient.OnPlayerLeft = PlayerLeft;
         _gameClient.OnWordComplete = MarkWord;
         _gameClient.OnColorPicked = ColorPicked;
-        _gameClient.OnGameComplete = GameComplete;
-        _gameClient.OnSocketOpen = () => ShowHideColorMenu(true);
-        _gameClient.OnSocketClose = OnSocketClosed; 
+        _gameClient.OnSocketClose.AddListener(OnSocketClosed); 
     }
 
     private void OnSocketClosed()
     {
-        ShowHideColorMenu(false);
-        _colorPickerManager.ClearColors();
+        _colorPickerManager?.ClearColors();
     }
 
-    private void GameComplete()
-        => ShowHideColorMenu(true);
-
-    private void ShowHideColorMenu(bool show)
-        => _colorPickerManager.ShowHideMenu(show);
 
     private void UserActionEvents_ColorPicked(KnownColor color)
         => _gameClient.SendColorPickRequest(color);
@@ -139,8 +130,6 @@ public class GameBoardLogic
 
     private void SetupGame()
     {
-        ShowHideColorMenu(false);
-
         if (_gameDataObject._wordList.Count <= 0)
             return;
 
@@ -152,17 +141,8 @@ public class GameBoardLogic
         _gridManager.CreateGrid();
 
         _wordListManager.PopulateList(_gameDataObject._wordList);
-    }
 
-    private void UserActionEvents_StartGameClicked()
-    {
-        GameSettingsItem gameSettingsItem = new()
-        {
-            WordCount = 0,
-            Theme = "test"
-        };
-
-        _gameClient.SendGameStart(gameSettingsItem);
+        CanvasStateController.DisplayGame();
     }
 
     private void SetupGameFromString(GameStartItem gameStartInfo)
@@ -176,10 +156,7 @@ public class GameBoardLogic
 
     private void UserActionEvents_LoginClicked(bool local)
     {
-        _gameClient.playerJoinInfo.RoomCode = _gameDataObject._roomCode;
-        _gameClient.playerJoinInfo.PlayerName = string.IsNullOrEmpty(_gameDataObject._playerName) ? "default" : _gameDataObject._playerName;
-
-        _gameClient.ConnectToServer(local);
+        _gameClient.CreateRoom(local);
     }
 
 }

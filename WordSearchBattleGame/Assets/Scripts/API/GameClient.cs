@@ -7,6 +7,8 @@ using System.Collections;
 using System.Linq;
 using System.Drawing;
 using Assets.Helpers;
+using UnityEngine.Events;
+using Assets.Scripts.GameData;
 
 namespace WordSearchBattleShared.API
 {
@@ -15,16 +17,23 @@ namespace WordSearchBattleShared.API
         private WebSocket socket;
         private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
         private readonly Uri _localServerUri = new("wss://localhost:7232/ws");
+        private JoinRequestInfo playerJoinInfo;
+
         public Action<GameStartItem> OnGameStart;
         public Action<PlayerJoinedInfo> OnPlayerJoined;
         public Action<WordItem> OnWordComplete;
         public Action<ColorPickerItem> OnColorPicked; 
         public Action<PlayerInfo> OnPlayerLeft;
         public Action OnGameComplete;
-        public Action OnSocketOpen;
-        public Action OnSocketClose;
-        public JoinRequestInfo playerJoinInfo = new();
         public PlayerInfo PlayerDetails = new();
+
+        [SerializeField]
+        private GameDataObject _gameDataObject;
+
+
+        public UnityEvent OnSocketOpen = new();
+        public UnityEvent OnSocketClose = new();
+
 
 
         void Update()
@@ -39,7 +48,27 @@ namespace WordSearchBattleShared.API
             Disconnect();
         }
 
-        public void ConnectToServer(bool local = false)
+        public void JoinRoomCode(bool local = false)
+        {
+            this.playerJoinInfo = new()
+            {
+                RoomCode = _gameDataObject?._roomCode,
+                PlayerName = string.IsNullOrEmpty(_gameDataObject?._playerName) ? "default" : _gameDataObject?._playerName
+            };
+            ConnectToServer(local);
+        }
+
+        public void CreateRoom(bool local = false)
+        {
+            this.playerJoinInfo = new()
+            {
+                RoomCode = string.Empty,
+                PlayerName = string.IsNullOrEmpty(_gameDataObject?._playerName) ? "default" : _gameDataObject?._playerName
+            };
+            ConnectToServer(local);
+        }
+
+        private void ConnectToServer(bool local)
         {
             try
             {
@@ -98,7 +127,7 @@ namespace WordSearchBattleShared.API
             socket.Connect();
         }
 
-        private void Disconnect()
+        public void Disconnect()
         {
             try
             {
@@ -178,8 +207,14 @@ namespace WordSearchBattleShared.API
             StartCoroutine(SendData(data));
         }
 
-        public void SendGameStart(GameSettingsItem gameSettings)
+        public void SendGameStart()
         {
+            GameSettingsItem gameSettings = new()
+            {
+                WordCount = 0,
+                Theme = "test"
+            };
+
             SessionData sessionData = new()
             {
                 DataType = SocketDataType.Start,
@@ -247,7 +282,11 @@ namespace WordSearchBattleShared.API
         }
 
         private void ReceivedPlayerDetails(string data)
-            => this.PlayerDetails = JsonUtility.FromJson<PlayerInfo>(data);
+        {
+            this.PlayerDetails = JsonUtility.FromJson<PlayerInfo>(data);
+            _gameDataObject.SetRoomCode(this.PlayerDetails.RoomCode);
+            _gameDataObject.SetPlayerName(this.PlayerDetails.PlayerName);
+        }
 
         private void ReceivedColorChanged(string data)
             => OnColorPicked?.Invoke(JsonUtility.FromJson<ColorPickerItem>(data));

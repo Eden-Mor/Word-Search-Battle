@@ -8,10 +8,9 @@ public class WordListManager : MonoBehaviour
 {
     public GameObject textPrefab; // Assign the Text prefab in the Inspector
 
-    private RectTransform rectTrans;
+    private RectTransform m_rectTrans;
+    private RectTransform rectTrans => m_rectTrans ??= GetComponent<RectTransform>();
 
-    void Awake() 
-        => rectTrans = this.GetComponent<RectTransform>();
 
     private List<string> wordList;
 

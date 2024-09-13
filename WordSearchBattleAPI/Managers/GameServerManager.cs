@@ -6,10 +6,11 @@ using WordSearchBattleShared.Enums;
 using System.Net.WebSockets;
 using WordSearchBattleAPI.Helper;
 using System.Collections.Concurrent;
+using WordSearchBattleAPI.Services;
 
 namespace WordSearchBattleAPI.Managers
 {
-    public class GameServerManager(IServiceProvider serviceProvider) 
+    public class GameServerManager(IServiceProvider serviceProvider, IRoomCodeGenerator roomGen)
     {
         private ConcurrentDictionary<string, Tuple<GameRoomManager, CancellationTokenSource>> gameSessions = [];
 
@@ -25,7 +26,7 @@ namespace WordSearchBattleAPI.Managers
                 var info = JsonSerializer.Deserialize<JoinRequestInfo>(stringval);
                 ConsoleLog.WriteLine("Player joined: " + info?.PlayerName);
 
-                if (info == null || string.IsNullOrEmpty(info.RoomCode))
+                if (info == null)
                 {
                     ConsoleLog.WriteLine("Invalid room code.");
                     await webSocket.CloseAsync(WebSocketCloseStatus.Empty, "No room found.", CancellationToken.None);
@@ -35,17 +36,18 @@ namespace WordSearchBattleAPI.Managers
                 info.PlayerName ??= "default";
                 var cancelTokenSource = new CancellationTokenSource();
 
-                //Check if room exists, 
-                if (!gameSessions.ContainsKey(info.RoomCode))
+                //Create the room
+                if (string.IsNullOrEmpty(info.RoomCode))
                 {
+                    info.RoomCode = await roomGen.GenerateUniqueCodeAsync(cancelTokenSource.Token);
                     ConsoleLog.WriteLine("Room created: " + info.RoomCode);
-                    
+
                     using var scope = serviceProvider.CreateScope();
                     GameContext _gameContext = scope.ServiceProvider.GetRequiredService<GameContext>();
 
                     //Room exists in database but not in dictionary, old room was not removed properly, remove it here.
-                    if (_gameContext.GameSessions.Any(x => x.RoomCode == info.RoomCode))
-                        await _gameContext.RemoveGameSessionChildrenAsync(_gameContext.GameSessions.First(x => x.RoomCode == info.RoomCode), CancellationToken.None);
+                    //if (_gameContext.GameSessions.Any(x => x.RoomCode == info.RoomCode))
+                        //await _gameContext.RemoveGameSessionChildrenAsync(_gameContext.GameSessions.First(x => x.RoomCode == info.RoomCode), CancellationToken.None);
 
                     _gameContext.GameSessions.Add(new GameSession(GameSessionStatus.WaitingForPlayers, info.RoomCode));
                     await _gameContext.SaveChangesAsync();
@@ -55,7 +57,7 @@ namespace WordSearchBattleAPI.Managers
                 }
 
                 ConsoleLog.WriteLine(string.Format("Player {0} joined {1}.", info?.PlayerName, info?.RoomCode));
-                await gameSessions[info!.RoomCode].Item1.AddClientAsync(webSocket, new PlayerResultInfo() { PlayerName = info.PlayerName }, cancelTokenSource.Token);
+                await gameSessions[info.RoomCode].Item1.AddClientAsync(webSocket, new PlayerResultInfo() { PlayerName = info.PlayerName, RoomCode = info.RoomCode }, cancelTokenSource.Token);
             }
             catch (Exception ex)
             {
@@ -63,7 +65,6 @@ namespace WordSearchBattleAPI.Managers
                 await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, ex.Message, CancellationToken.None);
             }
         }
-
 
         private async Task RemoveRoomAsync(string roomCode, CancellationToken token)
         {
@@ -78,7 +79,7 @@ namespace WordSearchBattleAPI.Managers
             //Log this data, and handle it in the future? see why it wont exist for any reason.
             if (session == null)
                 return;
-            
+
             await gameContext.RemoveGameSessionChildrenAsync(session, token);
         }
     }

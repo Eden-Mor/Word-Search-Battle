@@ -18,7 +18,6 @@ namespace WordSearchBattle.Scripts
         [SerializeField] private GameClient _GameClient;
         [SerializeField] private HighlightManager _highlightManager;
         [SerializeField] private ColorPickerManager _colorPickerManager;
-        [SerializeField] private GameObject _debugLogIn;
 
         private GameBoardLogic _gameBoardLogic;
 
@@ -33,10 +32,6 @@ namespace WordSearchBattle.Scripts
 
         public void Awake()
         {
-#if UNITY_EDITOR
-            _debugLogIn.SetActive(true);
-#endif
-
             _boardView.Initialize();
             _gameBoardLogic = new GameBoardLogic(_boardView, _boardEvents, _gameAPI, _gameData, _gridManager, _wordListManager, _GameClient, _highlightManager, _colorPickerManager);
             _gameBoardLogic.Initialize();

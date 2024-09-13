@@ -29,10 +29,10 @@ namespace Assets.Scripts.Board
         private float cellHeight;
         private float parentWidth;
         private float parentHeight;
-        private RectTransform parentTransform;
 
-        private void Start()
-            => parentTransform = GetComponent<RectTransform>();
+
+        private RectTransform m_parentTransform;
+        private RectTransform parentTransform => m_parentTransform ??= GetComponent<RectTransform>();
 
 
         public void CreateGrid()

@@ -41,8 +41,8 @@ builder.Services.AddDbContext<GameContext>();
 builder.Services.AddDbContext<PlayerContext>();
 
 builder.Services.AddScoped<IClaimReader, ClaimReaderService>();
-builder.Services.AddScoped<IRoomCodeGenerator, RoomCodeGeneratorService>();
 
+builder.Services.AddSingleton<IRoomCodeGenerator, RoomCodeGeneratorService>();
 builder.Services.AddSingleton<GameServerManager>();
 
 builder.Logging.ClearProviders();

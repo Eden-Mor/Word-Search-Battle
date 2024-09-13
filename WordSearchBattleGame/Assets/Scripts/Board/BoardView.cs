@@ -10,7 +10,6 @@ public class BoardView : GameView
     [SerializeField] private TextMeshProUGUI _gameWonWinnerText;
     [SerializeField] private GameObject _startGameButton;
     [SerializeField] private TextMeshProUGUI _roomCodeText;
-    [SerializeField] private TextMeshProUGUI _playerJoinedText;
 
     public void Initialize()
     {
@@ -20,7 +19,7 @@ public class BoardView : GameView
 
     public override void AddPlayerJoinedText(string text)
     {
-        _playerJoinedText.text += text + "\n";
+        //_playerJoinedText.text += text + "\n";
     }
 
     private void ResetBoard()

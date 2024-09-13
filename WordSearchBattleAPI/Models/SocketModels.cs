@@ -65,6 +65,7 @@ namespace WordSearchBattleAPI.Models
         public int PlayerId { get; set; }
         public string PlayerName { get; set; } = string.Empty;
         public KnownColor ColorEnum { get; set; } = KnownColor.Transparent;
+        public string RoomCode { get; set; } = string.Empty;
 
         public override string ToString()
         {
@@ -72,6 +73,7 @@ namespace WordSearchBattleAPI.Models
             sb.AppendLine($"Player Id: {PlayerId}");
             sb.AppendLine($"Player Name: {PlayerName}");
             sb.AppendLine($"Color: {ColorEnum}");
+            sb.AppendLine($"Room Code: {RoomCode}");
             return sb.ToString();
         }
     }
@@ -96,6 +98,6 @@ namespace WordSearchBattleAPI.Models
         PlayerJoined = 4,
         ColorChanged = 5,
         PlayerDetails = 6,
-        PlayerLeft = 7
+        PlayerLeft = 7,
     }
 }
