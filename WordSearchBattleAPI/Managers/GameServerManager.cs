@@ -33,11 +33,13 @@ namespace WordSearchBattleAPI.Managers
                     return;
                 }
 
-                info.PlayerName ??= "default";
+                info.RoomCode = GetLettersString(info.RoomCode, string.Empty, true); 
+                info.PlayerName = GetLettersString(info.PlayerName, "default", true);
+
                 var cancelTokenSource = new CancellationTokenSource();
 
-                //Create the room
-                if (string.IsNullOrEmpty(info.RoomCode))
+                //Create the room if no room code
+                if (string.IsNullOrWhiteSpace(info.RoomCode))
                 {
                     info.RoomCode = await roomGen.GenerateUniqueCodeAsync(cancelTokenSource.Token);
                     ConsoleLog.WriteLine("Room created: " + info.RoomCode);
@@ -56,14 +58,31 @@ namespace WordSearchBattleAPI.Managers
                     gameSessions[info.RoomCode].Item1.Initialize(cancelTokenSource.Token);
                 }
 
+                if (!gameSessions.TryGetValue(info.RoomCode, out Tuple<GameRoomManager, CancellationTokenSource>? room))
+                {
+                    ConsoleLog.WriteLine(string.Format("Could not find room {0} for player {1}.", info?.PlayerName, info?.RoomCode));
+                    await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Could not find room.", CancellationToken.None);
+                    return;
+                }
+
                 ConsoleLog.WriteLine(string.Format("Player {0} joined {1}.", info?.PlayerName, info?.RoomCode));
-                await gameSessions[info.RoomCode].Item1.AddClientAsync(webSocket, new PlayerResultInfo() { PlayerName = info.PlayerName, RoomCode = info.RoomCode }, cancelTokenSource.Token);
+                await room.Item1.AddClientAsync(webSocket, new PlayerResultInfo() { PlayerName = info.PlayerName, RoomCode = info.RoomCode }, cancelTokenSource.Token);
             }
             catch (Exception ex)
             {
-                ConsoleLog.WriteLine("Handle Client Error: " + ex.Message);
+                ConsoleLog.WriteLine("Exception from Client. Error: " + ex.Message);
                 await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, ex.Message, CancellationToken.None);
             }
+        }
+
+        private string GetLettersString(string? roomCode, string defaultIfNull, bool toUppercase = false)
+        {
+            var value = new string(roomCode?.Where(char.IsLetter).ToArray()) ?? defaultIfNull;
+
+            if (toUppercase)
+                value = value.ToUpper();
+
+            return value;
         }
 
         private async Task RemoveRoomAsync(string roomCode, CancellationToken token)

@@ -12,18 +12,17 @@ namespace WordSearchBattleAPI.Controllers
         {
             try
             {
-                if (HttpContext.WebSockets.IsWebSocketRequest)
-                {
-                    using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                    await gameServerMaster.HandleNewUser(webSocket);
-                    
-                    if (webSocket.State == WebSocketState.Open)
-                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Finished handling user.", CancellationToken.None);
-                }
-                else
+                if (!HttpContext.WebSockets.IsWebSocketRequest)
                 {
                     HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    return;
                 }
+
+                using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                await gameServerMaster.HandleNewUser(webSocket);
+
+                if (webSocket.State == WebSocketState.Open)
+                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Finished connection gracefully.", CancellationToken.None);
             }
             catch (Exception ex)
             {
