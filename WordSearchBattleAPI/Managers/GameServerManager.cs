@@ -14,6 +14,7 @@ namespace WordSearchBattleAPI.Managers
     {
         private ConcurrentDictionary<string, Tuple<GameRoomManager, CancellationTokenSource>> gameSessions = [];
 
+        public IReadOnlyDictionary<string, Tuple<GameRoomManager, CancellationTokenSource>> GameSessions => gameSessions;
 
         public async Task HandleNewUser(WebSocket webSocket)
         {

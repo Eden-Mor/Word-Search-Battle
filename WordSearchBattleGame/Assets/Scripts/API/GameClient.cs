@@ -9,14 +9,13 @@ using System.Drawing;
 using Assets.Helpers;
 using UnityEngine.Events;
 using Assets.Scripts.GameData;
+using Assets.Scripts.API;
 
 namespace WordSearchBattleShared.API
 {
     public class GameClient : MonoBehaviour
     {
         private WebSocket socket;
-        private readonly Uri _serverUri = new("wss://wordsearchbattle.api.edenmor.com/ws");
-        private readonly Uri _localServerUri = new("wss://localhost:7232/ws");
         private JoinRequestInfo playerJoinInfo;
 
         public Action<GameStartItem> OnGameStart;
@@ -84,7 +83,7 @@ namespace WordSearchBattleShared.API
 
         private void SetUpSocket(bool local)
         {
-            socket = new((local ? _localServerUri : _serverUri).ToString());
+            socket = new($"wss://{(local ? Constants.LOCAL_SERVER_URI : Constants.SERVER_URI)}/ws");
 
             socket.OnMessage += (e) =>
             {

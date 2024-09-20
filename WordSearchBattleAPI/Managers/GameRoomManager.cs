@@ -471,7 +471,7 @@ namespace WordSearchBattleAPI.Managers
                 wordSearch.HandleSetupGrid();
 
                 gameSession.WordList = [.. wordSearch.Words];
-                gameSession.LetterGrid = WordSearchController.ConvertCharArrayToStringGrid(wordSearch.Grid);
+                gameSession.LetterGrid = ConvertCharArrayToStringGrid(wordSearch.Grid);
 
 
                 //The item we send out to the players
@@ -496,10 +496,35 @@ namespace WordSearchBattleAPI.Managers
             }
         }
 
+
+        private static string ConvertCharArrayToStringGrid(char[,] array)
+        {
+            int rows = array.GetLength(0);
+            int cols = array.GetLength(1);
+            StringBuilder sb = new();
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                    sb.Append(array[i, j]);
+
+                if (i != rows - 1)
+                    sb.Append('|');
+            }
+
+            return sb.ToString();
+        }
+
         private void ClearPlayerWordCounts()
         {
             foreach (var player in usersDictionary.Values)
                 player.WordsCorrect = 0;
         }
+
+        public int GetPlayerCount()
+            => usersDictionary.Count;
+
+        public string GetRoomCode()
+            => masterPlayerInfo.RoomCode ?? string.Empty;
     }
 }

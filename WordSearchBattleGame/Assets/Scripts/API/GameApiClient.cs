@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using UnityEngine.Networking;
 using UnityEngine;
+using System;
 
 namespace Assets.Scripts.API
 {
@@ -18,24 +19,32 @@ namespace Assets.Scripts.API
 
         public async Task<string> GetAsync(string endpoint)
         {
-            var requestUrl = $"{_baseUrl}/{endpoint}";
-            using UnityWebRequest webRequest = UnityWebRequest.Get(requestUrl);
-
-            if (!string.IsNullOrEmpty(_authorizationHeader))
-                webRequest.SetRequestHeader("Authorization", _authorizationHeader);
-
-            var operation = webRequest.SendWebRequest();
-
-            while (!operation.isDone)
-                await Task.Yield();
-
-            if (webRequest.result != UnityWebRequest.Result.Success)
+            try
             {
-                Debug.LogError($"Error: {webRequest.error}");
+                var requestUrl = $"{_baseUrl}/{endpoint}";
+                using UnityWebRequest webRequest = UnityWebRequest.Get(requestUrl);
+
+                if (!string.IsNullOrEmpty(_authorizationHeader))
+                    webRequest.SetRequestHeader("Authorization", _authorizationHeader);
+
+                var operation = webRequest.SendWebRequest();
+
+                while (!operation.isDone)
+                    await Task.Yield();
+
+                if (webRequest.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError($"Error: {webRequest.error}");
+                    return null;
+                }
+
+                return webRequest.downloadHandler.text;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
                 return null;
             }
-
-            return webRequest.downloadHandler.text;
         }
 
         public async Task<string> PostAsync(string endpoint, string json)
