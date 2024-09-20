@@ -8,9 +8,10 @@ using WordSearchBattleAPI.Managers;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
+var services = builder.Services;
 
 // Add services to the container.
-builder.Services.AddAuthentication(x =>
+services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -29,27 +30,40 @@ builder.Services.AddAuthentication(x =>
     };
 });
 
+services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin",
+        builder =>
+        {
+            builder.WithOrigins("https://edenmor.com")
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
+});
+
+
 // Add services to the container.
-builder.Services.AddAuthorization();
-builder.Services.AddControllers();
+services.AddAuthorization();
+services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddHttpContextAccessor();
+services.AddEndpointsApiExplorer();
+services.AddSwaggerGen();
+services.AddHttpContextAccessor();
 
-builder.Services.AddDbContext<GameContext>();
-builder.Services.AddDbContext<PlayerContext>();
+services.AddDbContext<GameContext>();
+services.AddDbContext<PlayerContext>();
 
-builder.Services.AddScoped<IClaimReader, ClaimReaderService>();
+services.AddScoped<IClaimReader, ClaimReaderService>();
 
-builder.Services.AddSingleton<IRoomCodeGenerator, RoomCodeGeneratorService>();
-builder.Services.AddSingleton<GameServerManager>();
+services.AddSingleton<IRoomCodeGenerator, RoomCodeGeneratorService>();
+services.AddSingleton<GameServerManager>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options => options.TimestampFormat = "[HH:mm:ss] ");
 
 var app = builder.Build();
 
+app.UseCors("AllowSpecificOrigin");
 app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromSeconds(30) });
 
 var gameServerManager = app.Services.GetRequiredService<GameServerManager>();
