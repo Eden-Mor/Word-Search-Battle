@@ -1,22 +1,30 @@
 using Assets.Scripts.API;
 using Assets.Scripts.GameData;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
+using WordSearchBattleShared.API;
 
 public class ServerListManager : MonoBehaviour
 {
+    public GameClient gameClient;
     public GameDataObject gameData;
     public GameApiService apiService;
+    public RoomSelectorController roomSelectPrefab;
 
     private Transform m_container;
     private Transform container => m_container ??= this.transform.GetChild(0);
 
-
     void OnEnable()
-        => apiService.PopulatePublicServerList();
+    {
+        apiService.PopulatePublicServerList();
+    }
+
+    public void OnJoinClicked(string roomCode)
+    {
+        gameData.SetRoomCode(roomCode);
+        gameClient.JoinRoomCode();
+    }
+
 
     public void SetServerList(bool resultOk)
     {
@@ -36,10 +44,8 @@ public class ServerListManager : MonoBehaviour
      
         foreach (var keyPair in gameData.ServerList)
         {
-            GameObject newTextObject = new("ServerText");
-            newTextObject.transform.SetParent(container.transform, false);
-            TextMeshProUGUI textComponent = newTextObject.AddComponent<TextMeshProUGUI>();
-            textComponent.text = keyPair.Key;
+            RoomSelectorController controller = Instantiate(roomSelectPrefab, container.transform);
+            controller.Initialize(keyPair.Key, keyPair.Value, 6, OnJoinClicked);
         }
     }
 }

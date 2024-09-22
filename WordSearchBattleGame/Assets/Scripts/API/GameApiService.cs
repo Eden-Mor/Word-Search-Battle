@@ -4,6 +4,7 @@ using UnityEngine;
 using Assets.Scripts.GameData;
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Assets.Scripts.API
 {
@@ -38,7 +39,10 @@ namespace Assets.Scripts.API
             bool resultOk = task.Result != null;
 
             if (resultOk)
-                serverList = JsonUtility.FromJson<Dictionary<string, int>>(task.Result);
+            {
+                var json = task.Result;
+                serverList = JsonConvert.DeserializeObject<Dictionary<string, int>>(json);
+            }
 
             Debug.Log($"Public games data: {task.Result}");
             _gameData.ServerListChanged(resultOk, serverList);

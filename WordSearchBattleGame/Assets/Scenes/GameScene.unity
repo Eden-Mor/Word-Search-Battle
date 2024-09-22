@@ -533,8 +533,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 692001e552c54d54682645ecf6cc7940, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameClient: {fileID: 18687697}
   gameData: {fileID: 1399461348}
   apiService: {fileID: 913770090}
+  roomSelectPrefab: {fileID: 2921711572003440687, guid: 7f5a191864331554ba562b3acab54ed3, type: 3}
 --- !u!114 &40102241
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -806,7 +808,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 69.35
+  m_fontSize: 71.5
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1533,7 +1535,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.4199829, y: 0.49002075}
+  m_AnchoredPosition: {x: 0.4199829, y: 0.49005127}
   m_SizeDelta: {x: -59.73999, y: -46.890015}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &382414446
@@ -2262,7 +2264,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 55.7
+  m_fontSize: 57.4
   m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3269,7 +3271,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 48
+  m_fontSize: 43.7
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3355,7 +3357,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.72530085, y: 0.9066744}
   m_AnchorMax: {x: 0.9686992, y: 0.98932576}
-  m_AnchoredPosition: {x: -0.666687, y: -0.7999878}
+  m_AnchoredPosition: {x: -0.666687, y: -0.8000488}
   m_SizeDelta: {x: -5.7655945, y: -2.4687958}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &740050769
@@ -4471,7 +4473,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 49.45
+  m_fontSize: 51.35
   m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -4605,7 +4607,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 69.45
+  m_fontSize: 71.85
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -7136,7 +7138,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 59.9
+  m_fontSize: 53.2
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -7392,7 +7394,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.43229336, y: 0.009000001}
   m_AnchorMax: {x: 0.66911995, y: 0.09900001}
-  m_AnchoredPosition: {x: -0.5, y: 1.0001221}
+  m_AnchoredPosition: {x: -0.5, y: 1.0002441}
   m_SizeDelta: {x: -1.6463013, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2086913347
