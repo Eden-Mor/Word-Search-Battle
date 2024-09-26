@@ -221,7 +221,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &27803271
 RectTransform:
   m_ObjectHideFlags: 0
@@ -286,9 +286,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1697907299}
-        m_TargetAssemblyTypeName: WordSearchBattle.Scripts.BoardComponent, Assembly-CSharp
-        m_MethodName: OnStartGameClicked
+      - m_Target: {fileID: 18687697}
+        m_TargetAssemblyTypeName: WordSearchBattleShared.API.GameClient, Assembly-CSharp
+        m_MethodName: SendGameStart
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2596,7 +2596,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &619402845
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4379,7 +4379,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.98736036, y: 0.044000003}
   m_AnchorMax: {x: 0.98736036, y: 0.96900004}
-  m_AnchoredPosition: {x: -87.651855, y: -5.614868}
+  m_AnchoredPosition: {x: -87.651855, y: -5.6148376}
   m_SizeDelta: {x: 206.42801, y: 20.408997}
   m_Pivot: {x: 0.5463105, y: 0.5}
 --- !u!1 &1057258278
@@ -6324,7 +6324,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1672934238
 RectTransform:
   m_ObjectHideFlags: 0
