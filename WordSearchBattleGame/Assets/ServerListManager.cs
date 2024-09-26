@@ -19,6 +19,11 @@ public class ServerListManager : MonoBehaviour
         apiService.PopulatePublicServerList();
     }
 
+    private void OnDisable()
+    {
+        gameData._playerList = new();
+    }
+
     public void OnJoinClicked(string roomCode)
     {
         gameData.SetRoomCode(roomCode);

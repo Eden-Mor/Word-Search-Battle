@@ -100,15 +100,12 @@ public class GameBoardLogic
 
     private void OnPlayerJoined(PlayerJoinedInfo info)
     {
-        StringBuilder sb = new();
-        sb.Append(info.PlayerName + " Joined");
-        sb.Append(" Count: " + info.PlayerCount);
-        _gameView.AddPlayerJoinedText(sb.ToString());
+        _gameDataObject.AddPlayer(info);
     }
 
     private void PlayerLeft(PlayerInfo info)
     {
-        _gameView.AddPlayerJoinedText(info.PlayerName + " Left");
+        _gameDataObject.RemovePlayer(info);
         _colorPickerManager.ColorUnChosen(info.ColorEnum);
     }
 
@@ -149,7 +146,7 @@ public class GameBoardLogic
     {
         _gameDataObject._wordList = gameStartInfo.WordList;
         _gameDataObject._letterGrid = GridArrayHelper.ConvertToCharArray(gameStartInfo.LetterGrid, '|');
-        _gameDataObject._playerList = gameStartInfo.PlayerList;
+        _gameDataObject.ChangePlayerList(gameStartInfo.PlayerList);
 
         SetupGame();
     }

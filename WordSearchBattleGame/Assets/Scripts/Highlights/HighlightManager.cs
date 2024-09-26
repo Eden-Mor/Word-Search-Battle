@@ -7,17 +7,13 @@ namespace WordSearchBattle.Scripts
     public class HighlightManager : MonoBehaviour
     {
         public GameObject highlightBarPrefab;
-        
-        private RectTransform m_rectTrans;
-        private RectTransform rectTrans => m_rectTrans ??= GetComponent<RectTransform>();
-
 
         public void ResetHighlights()
         {
-            if (rectTrans == null)
+            if (transform == null)
                 return;
 
-            foreach (Transform child in rectTrans)
+            foreach (Transform child in transform)
                 Destroy(child.gameObject);
         }
 
