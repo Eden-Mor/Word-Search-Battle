@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using WordSearchBattleShared.Models;
@@ -86,9 +87,38 @@ namespace WordSearchBattle.Scripts
             if (isDiagonal)
                 angle += 90f;
 
-            rectTransform.rotation = Quaternion.Euler(0, 0, angle);
-
             image.color = new Color(color.r, color.g, color.b, opacity);
+
+            rectTransform.rotation = Quaternion.Euler(0, 0, angle);
+            //If wanting to animation from the selected word, change the pivot point of the rotation.
+            StartCoroutine(RotateCoroutine(0, 90, 0));
+        }
+
+        private IEnumerator RotateCoroutine(int x, int y, int z)
+        {
+            float rotationDuration = 1f;
+            Quaternion startRotation = transform.rotation * Quaternion.Euler(x, y, z);  // Store the initial rotation
+            Quaternion targetRotation = transform.rotation;
+
+            float timeElapsed = 0f;
+
+            // Rotate over time
+            while (timeElapsed < rotationDuration)
+            {
+                timeElapsed += Time.deltaTime;
+                float t = timeElapsed / rotationDuration;
+
+                // Lerp between start and target rotations
+                if (transform != null)
+                    transform.rotation = Quaternion.Lerp(startRotation, targetRotation, t);
+
+                // This yield returns control until the next frame
+                yield return null;
+            }
+
+            // Ensure the rotation is exactly the target rotation at the end
+            if (transform != null)
+                transform.rotation = targetRotation;
         }
     }
 }

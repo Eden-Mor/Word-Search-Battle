@@ -25,13 +25,9 @@ namespace WordSearchBattle.Scripts
             GameObject highlightBar = Instantiate(highlightBarPrefab, transform);
             HighlightBarController controller = highlightBar.GetComponent<HighlightBarController>();
 
+            // Sort start so it is calculated correctly
             if (endLetter.X > startLetter.X || (endLetter.X == startLetter.X && endLetter.Y > startLetter.Y))
-            {
-                // Sort start so it is calculated correctly
-                IPosition temp = startLetter;
-                startLetter = endLetter;
-                endLetter = temp;
-            }
+                (endLetter, startLetter) = (startLetter, endLetter);
 
             controller.Setup(startLetter, endLetter, (Color)color, opacity, size);
         }
